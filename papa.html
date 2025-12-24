@@ -3,13 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TOP GUN: MAJICA ZONE</title>
+    <title>TOP GUN: DANGER ZONE</title>
     <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
     <style>
         /* --- GLOBAL PIXEL ART STYLE --- */
         body {
             /* American Flag Background */
-            /* what happened*/
             background-image: repeating-linear-gradient(
                 180deg,
                 #B22234,
@@ -18,14 +17,12 @@
                 #FFFFFF 80px
             );
             color: #eee;
-            /* The Pixel Font */
             font-family: 'Press Start 2P', cursive;
             margin: 0;
             display: flex;
             flex-direction: column;
             align-items: center;
             min-height: 100vh;
-            /* Ensure smooth fonts are disabled */
             -webkit-font-smoothing: none;
         }
 
@@ -34,14 +31,13 @@
             padding: 30px;
             width: 100%;
             text-align: center;
-            background-color: #000033; /* Dark Navy */
+            background-color: #000033;
             border-bottom: 4px solid #fff;
             box-shadow: 0 4px 0 #000;
             z-index: 10;
             position: relative; 
         }
 
-        /* --- HEADER LOGO IMAGE --- */
         .header-logo {
             position: absolute;
             top: 50%;
@@ -64,10 +60,9 @@
             header h1 { font-size: 14px; line-height: 1.8; }
         }
 
-
         h1 { 
             margin: 0; 
-            color: #FFD700; /* Gold Wings Color */
+            color: #FFD700;
             line-height: 1.5;
             font-size: 24px;
             text-shadow: 4px 4px #000;
@@ -96,7 +91,6 @@
             box-shadow: 10px 10px 0px #000;
         }
 
-        /* --- THE GAME BOX (TOP GUN THEMED) --- */
         .bezel-wrapper {
             margin: 20px auto;
             padding: 10px;
@@ -126,7 +120,6 @@
             image-rendering: pixelated; 
         }
 
-        /* --- TOP SECRET HEADER INSIDE BOX --- */
         .game-header {
             background-color: #000;
             color: #FF4500;
@@ -146,27 +139,38 @@
             width: 100%;
             pointer-events: none; 
             text-shadow: 2px 2px 0 #000;
+            display: flex;
+            justify-content: space-between;
+            padding: 0 20px;
+            box-sizing: border-box;
         }
 
-        #score {
+        #score-box { text-align: left; }
+        #level-box { text-align: right; }
+
+        .hud-text {
             font-size: 16px;
             color: #32FF32; /* Radar Green */
-            margin-left: 20px;
-            float: left;
+            margin-bottom: 5px;
         }
-
-        #instructions {
-            font-size: 12px;
+        
+        .sub-text {
+            font-size: 10px;
             color: #FFD700;
-            margin-right: 20px;
-            float: right;
-            animation: blink 1.5s infinite;
         }
 
-        @keyframes blink {
-            0% { opacity: 1; }
-            50% { opacity: 0.3; }
-            100% { opacity: 1; }
+        /* Level Notification (Centers on screen) */
+        #level-notification {
+            position: absolute;
+            top: 40%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 30px;
+            color: #FFD700;
+            text-shadow: 4px 4px 0 #000;
+            text-align: center;
+            display: none;
+            z-index: 50;
         }
 
         @media (max-width: 850px) {
@@ -179,7 +183,6 @@
 
     <header>
         <img src="captain.png" alt="Captain" class="header-logo">
-        
         <h1>TOP GUN: MAJICA ZONE</h1>
         <p>IT'S NOT THE PLANE IT'S THE PILOT</p>
     </header>
@@ -191,15 +194,22 @@
             <div class="game-header"> I feel the need... the need for speed! // LIVE SHOOTING</div>
             <div id="game-container">
                 <div id="ui-layer">
-                    <div id="score">KILLS: 0</div>
-                    <div id="instructions">INSERT COIN...</div>
+                    <div id="score-box">
+                        <div id="score" class="hud-text">KILLS: 0</div>
+                        <div id="target" class="sub-text">TARGET: 10</div>
+                    </div>
+                    <div id="level-box">
+                        <div id="level-display" class="hud-text">LEVEL 1</div>
+                        <div class="sub-text">SORTIE: TRAINING</div>
+                    </div>
                 </div>
+                <div id="level-notification">LEVEL UP</div>
                 <canvas id="gameCanvas"></canvas>
             </div>
         </div>
 
         <p style="margin-top: 30px; line-height: 1.8;">
-            OBJECTIVE: INTERCEPT MIG-28s.<br>
+            OBJECTIVE: COMPLETE 3 SORTIES.<br>
             <span style="color: #FF4500;">WARNING: HOSTILES ARE ARMED.</span><br>
             <span style="color: #32FF32;">GOOD LUCK, MAVERICK.</span>
         </p>
@@ -213,28 +223,42 @@
     const container = document.getElementById('game-container');
     const canvas = document.getElementById('gameCanvas');
     const ctx = canvas.getContext('2d');
+    
+    // UI Elements
     const scoreEl = document.getElementById('score');
-    const instrEl = document.getElementById('instructions');
+    const targetEl = document.getElementById('target');
+    const levelDisplayEl = document.getElementById('level-display');
+    const levelNoteEl = document.getElementById('level-notification');
 
-    // --- RESIZE HANDLING ---
+    // --- GAME STATE ---
     let GAME_WIDTH = container.clientWidth;
     let GAME_HEIGHT = container.clientHeight;
+    
+    // --- LEVEL CONFIGURATION ---
+    const LEVELS = {
+        1: { killsNeeded: 10, spawnRate: 60, enemySpeedMin: 2, enemySpeedMax: 4, shootChance: 0.005, name: "TRAINING" },
+        2: { killsNeeded: 15, spawnRate: 45, enemySpeedMin: 3, enemySpeedMax: 6, shootChance: 0.02, name: "CONTACT" },
+        3: { killsNeeded: 25, spawnRate: 25, enemySpeedMin: 5, enemySpeedMax: 9, shootChance: 0.05, name: "DANGER ZONE" }
+    };
+    const MAX_LEVEL = 3;
 
+    let currentLevel = 1;
+    let levelKills = 0; // Kills in current level
+    let totalKills = 0; // Total game score
+    let gameRunning = true;
+    let gameWon = false;
+
+    // --- RESIZE HANDLING ---
     function resize() {
         GAME_WIDTH = container.clientWidth;
         GAME_HEIGHT = container.clientHeight;
         canvas.width = GAME_WIDTH;
         canvas.height = GAME_HEIGHT;
-        
-        // Keep pixel art crisp
         ctx.imageSmoothingEnabled = false;
 
-        if (player.x > GAME_WIDTH - player.width) {
-            player.x = GAME_WIDTH - player.width;
-        }
+        if (player.x > GAME_WIDTH - player.width) player.x = GAME_WIDTH - player.width;
         player.y = GAME_HEIGHT - player.height - 20; 
     }
-    
     window.addEventListener('resize', resize);
 
     // --- IMAGES ---
@@ -248,47 +272,35 @@
         imagesLoaded++;
         if(imagesLoaded === 2) startGame();
     };
-
-    const startGame = () => {
-        instrEl.innerText = "SPACE: FIRE | R: RESTART";
-        resize(); 
-        requestAnimationFrame(gameLoop);
-    };
-
     playerImg.onload = checkStart;
     enemyImg.onload = checkStart;
     
-    setTimeout(() => {
-        if(imagesLoaded < 2) startGame();
-    }, 1000);
+    setTimeout(() => { if(imagesLoaded < 2) startGame(); }, 1000);
 
-    // --- CONFIGURATION ---
+    const startGame = () => {
+        resize(); 
+        updateUI();
+        requestAnimationFrame(gameLoop);
+    };
+
+    // --- CONFIG SIZES ---
     const P_WIDTH = 64; 
     const P_HEIGHT = 64;
     const E_WIDTH = 48;
     const E_HEIGHT = 48;
 
-    let gameRunning = true;
-    let score = 0;
-    
     // --- INPUT ---
     const keys = {};
     window.addEventListener('keydown', (e) => {
-        if(["ArrowUp","ArrowDown","ArrowLeft","ArrowRight","Space"].includes(e.code)) {
-            e.preventDefault();
-        }
+        if(["ArrowUp","ArrowDown","ArrowLeft","ArrowRight","Space"].includes(e.code)) e.preventDefault();
         keys[e.code] = true;
-        if (e.code === 'KeyR' && !gameRunning) resetGame();
+        if (e.code === 'KeyR' && (!gameRunning || gameWon)) resetGame();
     });
     window.addEventListener('keyup', (e) => keys[e.code] = false);
 
-    // --- OBJECTS ---
+    // --- ENTITIES ---
     const player = {
-        x: 0, 
-        y: 0,
-        width: P_WIDTH,
-        height: P_HEIGHT,
-        speed: 6,
+        x: 0, y: 0, width: P_WIDTH, height: P_HEIGHT, speed: 6,
         update: function() {
             if (keys['ArrowLeft'] && this.x > 0) this.x -= this.speed;
             if (keys['ArrowRight'] && this.x < GAME_WIDTH - this.width) this.x += this.speed;
@@ -297,29 +309,26 @@
             if(playerImg.complete && playerImg.naturalHeight !== 0) {
                 ctx.drawImage(playerImg, this.x, this.y, this.width, this.height);
             } else {
-                // Fallback drawing if image fails
                 ctx.fillStyle = '#999';
-                ctx.fillRect(this.x + 28, this.y, 8, 64);
-                ctx.fillRect(this.x, this.y + 30, 64, 16);
-                ctx.fillRect(this.x + 20, this.y + 50, 24, 8);
-                ctx.fillStyle = '#00FFFF';
-                ctx.fillRect(this.x + 30, this.y + 10, 4, 10);
+                ctx.fillRect(this.x, this.y, this.width, this.height);
             }
         }
     };
 
     let bullets = [];
     let enemies = [];
-    let enemyBullets = []; // NEW: Array for enemy missiles
+    let enemyBullets = [];
     let spawnTimer = 0;
 
     function spawnEnemy() {
+        const cfg = LEVELS[currentLevel];
         enemies.push({
             x: Math.random() * (GAME_WIDTH - E_WIDTH),
             y: -100,
             width: E_WIDTH,
             height: E_HEIGHT,
-            speedY: Math.random() * 3 + 2,
+            // Speed depends on Level
+            speedY: Math.random() * (cfg.enemySpeedMax - cfg.enemySpeedMin) + cfg.enemySpeedMin,
             speedX: Math.random() * 2 - 1
         });
     }
@@ -327,50 +336,98 @@
     function resetGame() {
         bullets = [];
         enemies = [];
-        enemyBullets = []; // NEW: Clear enemy bullets on reset
-        score = 0;
-        scoreEl.innerText = "KILLS: " + score;
+        enemyBullets = [];
+        currentLevel = 1;
+        levelKills = 0;
+        totalKills = 0;
         gameRunning = true;
-        resize(); 
+        gameWon = false;
+        levelNoteEl.style.display = 'none';
+        
         player.x = GAME_WIDTH / 2 - P_WIDTH/2; 
+        updateUI();
+        resize(); 
         requestAnimationFrame(gameLoop);
     }
 
-    // --- LOOP ---
+    function updateUI() {
+        scoreEl.innerText = "KILLS: " + totalKills;
+        targetEl.innerText = "TARGET: " + (LEVELS[currentLevel].killsNeeded - levelKills);
+        levelDisplayEl.innerText = "LEVEL " + currentLevel;
+        document.querySelector('#level-box .sub-text').innerText = "SORTIE: " + LEVELS[currentLevel].name;
+    }
+
+    function advanceLevel() {
+        if (currentLevel < MAX_LEVEL) {
+            currentLevel++;
+            levelKills = 0;
+            
+            // Visual Flare
+            levelNoteEl.innerText = LEVELS[currentLevel].name;
+            levelNoteEl.style.display = 'block';
+            setTimeout(() => { levelNoteEl.style.display = 'none'; }, 2000);
+            
+            // Clear screen a bit
+            enemies = []; 
+            enemyBullets = [];
+            updateUI();
+        } else {
+            winGame();
+        }
+    }
+
+    function winGame() {
+        gameRunning = false;
+        gameWon = true;
+        drawWinScreen();
+    }
+
+    function drawWinScreen() {
+        ctx.fillStyle = "rgba(0, 50, 0, 0.8)";
+        ctx.fillRect(GAME_WIDTH/2 - 250, GAME_HEIGHT/2 - 100, 500, 200);
+        ctx.strokeStyle = "#32FF32";
+        ctx.lineWidth = 4;
+        ctx.strokeRect(GAME_WIDTH/2 - 250, GAME_HEIGHT/2 - 100, 500, 200);
+
+        ctx.fillStyle = "#32FF32";
+        ctx.textAlign = "center";
+        
+        ctx.font = "24px 'Press Start 2P'"; 
+        ctx.fillText("MISSION ACCOMPLISHED", GAME_WIDTH/2, GAME_HEIGHT/2 - 30);
+        
+        ctx.fillStyle = "#fff";
+        ctx.font = "14px 'Press Start 2P'";
+        ctx.fillText("YOU CAN BE MY WINGMAN ANYTIME", GAME_WIDTH/2, GAME_HEIGHT/2 + 20);
+        
+        ctx.fillStyle = "#FFD700";
+        ctx.fillText("PRESS 'R' TO REPLAY", GAME_WIDTH/2, GAME_HEIGHT/2 + 60);
+        ctx.textAlign = "left"; 
+    }
+
+    // --- MAIN LOOP ---
     function gameLoop() {
         if (!gameRunning) return;
 
         ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-        // Grid lines
+        // Draw Grid
         ctx.strokeStyle = '#222';
         ctx.lineWidth = 2;
-        for(let i=0; i<GAME_WIDTH; i+=50) {
-            ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, GAME_HEIGHT); ctx.stroke();
-        }
-        for(let i=0; i<GAME_HEIGHT; i+=50) {
-            ctx.beginPath(); ctx.moveTo(0, i); ctx.lineTo(GAME_WIDTH, i); ctx.stroke();
-        }
+        for(let i=0; i<GAME_WIDTH; i+=50) { ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, GAME_HEIGHT); ctx.stroke(); }
+        for(let i=0; i<GAME_HEIGHT; i+=50) { ctx.beginPath(); ctx.moveTo(0, i); ctx.lineTo(GAME_WIDTH, i); ctx.stroke(); }
 
         player.update();
         player.draw();
 
-        // Player Firing
+        // Player Fire
         if (keys['Space']) {
             if (!keys.spaceLocked) {
-                bullets.push({
-                    x: player.x + P_WIDTH/2 - 4, 
-                    y: player.y, 
-                    width: 8, 
-                    height: 16
-                });
+                bullets.push({ x: player.x + P_WIDTH/2 - 4, y: player.y, width: 8, height: 16 });
                 keys.spaceLocked = true;
             }
-        } else {
-            keys.spaceLocked = false;
-        }
+        } else { keys.spaceLocked = false; }
 
-        // Update/Draw Player Bullets
+        // Bullet Logic
         ctx.fillStyle = '#FFD700';
         for (let i = bullets.length - 1; i >= 0; i--) {
             let b = bullets[i];
@@ -379,31 +436,35 @@
             if (b.y < 0) bullets.splice(i, 1);
         }
 
-        // Enemy Spawning
+        // Enemy Spawning Logic
         spawnTimer++;
-        if (spawnTimer > 30 && enemies.length < (8 + Math.floor(score/10))) {
-            spawnEnemy();
-            spawnTimer = 0;
+        const lvlCfg = LEVELS[currentLevel];
+        
+        // Spawn based on Level Rate
+        if (spawnTimer > lvlCfg.spawnRate) {
+            // Max enemies on screen limiter
+            if (enemies.length < 5 + currentLevel * 2) { 
+                spawnEnemy();
+                spawnTimer = 0;
+            }
         }
 
-        // Update/Draw Enemies
+        // Enemy Logic
         for (let i = enemies.length - 1; i >= 0; i--) {
             let e = enemies[i];
             e.y += e.speedY;
             e.x += e.speedX;
 
-            // NEW: Enemy Firing Logic
-            // 2% Chance per frame to shoot (Adjust 0.02 to make it harder/easier)
-            if (Math.random() < 0.02) {
+            // Shooting Chance (Based on Level)
+            if (Math.random() < lvlCfg.shootChance) {
                 enemyBullets.push({
                     x: e.x + e.width / 2 - 3,
                     y: e.y + e.height,
-                    width: 6,
-                    height: 12,
-                    speed: 7
+                    width: 6, height: 12, speed: 7
                 });
             }
 
+            // Draw Enemy
             if(enemyImg.complete && enemyImg.naturalHeight !== 0) {
                 ctx.save();
                 ctx.translate(e.x + e.width/2, e.y + e.height/2);
@@ -412,28 +473,31 @@
                 ctx.restore();
             } else {
                 ctx.fillStyle = '#D22'; 
-                ctx.fillRect(e.x + 20, e.y, 8, 48); 
-                ctx.fillRect(e.x, e.y + 10, 48, 12); 
+                ctx.fillRect(e.x, e.y, e.width, e.height); 
             }
 
-            // Check Player Hit by Enemy Ship (Collision)
-            if (
-                player.x < e.x + e.width &&
-                player.x + player.width > e.x &&
-                player.y < e.y + e.height &&
-                player.height + player.y > e.y
-            ) {
+            // Player Collision
+            if (player.x < e.x + e.width && player.x + player.width > e.x &&
+                player.y < e.y + e.height && player.height + player.y > e.y) {
                 gameOver();
             }
 
-            // Check Enemy Hit by Player Bullet
+            // Bullet Hit Check
             for (let j = bullets.length - 1; j >= 0; j--) {
                 let b = bullets[j];
                 if (b.x > e.x && b.x < e.x + e.width && b.y < e.y + e.height && b.y > e.y) {
                     enemies.splice(i, 1);
                     bullets.splice(j, 1);
-                    score++;
-                    scoreEl.innerText = "KILLS: " + score;
+                    
+                    // SCORE UPDATES
+                    levelKills++;
+                    totalKills++;
+                    updateUI();
+                    
+                    // LEVEL CHECK
+                    if (levelKills >= lvlCfg.killsNeeded) {
+                        advanceLevel();
+                    }
                     break;
                 }
             }
@@ -441,28 +505,18 @@
             if (e.y > GAME_HEIGHT) enemies.splice(i, 1);
         }
 
-        // NEW: Update/Draw Enemy Bullets
-        ctx.fillStyle = '#FF0000'; // Bright Red for Enemy Fire
+        // Enemy Bullets Logic
+        ctx.fillStyle = '#FF0000'; 
         for (let k = enemyBullets.length - 1; k >= 0; k--) {
             let eb = enemyBullets[k];
             eb.y += eb.speed;
-            
             ctx.fillRect(eb.x, eb.y, eb.width, eb.height);
 
-            // Check Collision: Enemy Bullet hitting Player
-            if (
-                eb.x < player.x + player.width &&
-                eb.x + eb.width > player.x &&
-                eb.y < player.y + player.height &&
-                eb.y + eb.height > player.y
-            ) {
+            if (eb.x < player.x + player.width && eb.x + eb.width > player.x &&
+                eb.y < player.y + player.height && eb.y + eb.height > player.y) {
                 gameOver();
             }
-
-            // Remove if off screen
-            if (eb.y > GAME_HEIGHT) {
-                enemyBullets.splice(k, 1);
-            }
+            if (eb.y > GAME_HEIGHT) enemyBullets.splice(k, 1);
         }
 
         requestAnimationFrame(gameLoop);
@@ -484,7 +538,7 @@
         
         ctx.fillStyle = "#FF4500";
         ctx.font = "14px 'Press Start 2P'";
-        ctx.fillText("YOU'VE BEEN HIT", GAME_WIDTH/2, GAME_HEIGHT/2 + 10);
+        ctx.fillText("KIA - LEVEL " + currentLevel, GAME_WIDTH/2, GAME_HEIGHT/2 + 10);
 
         ctx.fillStyle = "#FFD700";
         ctx.font = "12px 'Press Start 2P'";
