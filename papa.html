@@ -1,0 +1,465 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TOP GUN: DANGER ZONE</title>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+    <style>
+        /* --- GLOBAL PIXEL ART STYLE --- */
+        body {
+            /* American Flag Background */
+            background-image: repeating-linear-gradient(
+                180deg,
+                #B22234,
+                #B22234 40px,
+                #FFFFFF 40px,
+                #FFFFFF 80px
+            );
+            color: #eee;
+            /* The Pixel Font */
+            font-family: 'Press Start 2P', cursive;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            /* Ensure smooth fonts are disabled */
+            -webkit-font-smoothing: none;
+        }
+
+        /* --- MILITARY HEADER --- */
+        header, footer {
+            padding: 30px;
+            width: 100%;
+            text-align: center;
+            background-color: #000033; /* Dark Navy */
+            border-bottom: 4px solid #fff;
+            box-shadow: 0 4px 0 #000;
+            z-index: 10;
+            /* Added position relative so we can absolutely position the logo inside */
+            position: relative; 
+        }
+
+        /* --- NEW: HEADER LOGO IMAGE --- */
+        .header-logo {
+            position: absolute;
+            top: 50%;
+            left: 30px; /* Match header padding */
+            transform: translateY(-50%); /* Center vertically */
+            
+            /* UPDATED SIZE: MADE BIGGER */
+            width: 160px; 
+            height: auto;
+            
+            /* ADDED: Blue Background as requested */
+            background-color: #0A3161; 
+
+            /* Critical for pixel art crispness */
+            image-rendering: pixelated; 
+            
+            /* Themed Border */
+            border: 4px solid #fff; /* Slightly thicker border for bigger size */
+            box-shadow: 4px 4px 0 #000;
+        }
+        
+        /* New Tablet breakpoint to prevent overlap on medium screens */
+        @media (max-width: 950px) {
+            .header-logo {
+                width: 110px;
+                left: 20px;
+            }
+        }
+
+        /* Existing Mobile breakpoint */
+        @media (max-width: 650px) {
+            .header-logo {
+                width: 60px;
+                left: 10px;
+            }
+            header h1 { font-size: 14px; line-height: 1.8; }
+        }
+
+
+        h1 { 
+            margin: 0; 
+            color: #FFD700; /* Gold Wings Color */
+            line-height: 1.5;
+            font-size: 24px;
+            text-shadow: 4px 4px #000;
+            /* Ensure text stays above logo if screen gets really weirdly sized */
+            position: relative; 
+            z-index: 2;
+        }
+
+        p {
+            font-size: 10px;
+            margin-top: 10px;
+            color: #bbb;
+            position: relative;
+            z-index: 2;
+        }
+        
+        /* --- MAIN CONTENT BOX --- */
+        .content-area {
+            width: 100%;
+            max-width: 960px;
+            margin: 40px 20px;
+            padding: 20px;
+            box-sizing: border-box;
+            text-align: center;
+            background-color: #111; 
+            border: 4px solid #fff;
+            box-shadow: 10px 10px 0px #000;
+        }
+
+        /* --- THE GAME BOX (TOP GUN THEMED) --- */
+        .bezel-wrapper {
+            margin: 20px auto;
+            padding: 10px;
+            background-color: #2b2b2b;
+            background-image: repeating-linear-gradient(
+                45deg,
+                #FFD700,
+                #FFD700 20px,
+                #000 20px,
+                #000 40px
+            );
+            width: fit-content;
+            box-shadow: 0 0 15px #000;
+        }
+
+        #game-container {
+            position: relative;
+            width: 800px; 
+            height: 600px;
+            background-color: #000;
+            border: 4px solid #222;
+            overflow: hidden; 
+        }
+
+        canvas {
+            display: block;
+            image-rendering: pixelated; 
+        }
+
+        /* --- TOP SECRET HEADER INSIDE BOX --- */
+        .game-header {
+            background-color: #000;
+            color: #FF4500;
+            padding: 10px;
+            font-size: 12px;
+            border: 2px solid #555;
+            margin-bottom: 5px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        /* --- UI OVERLAY --- */
+        #ui-layer {
+            position: absolute;
+            top: 20px;
+            left: 0;
+            width: 100%;
+            pointer-events: none; 
+            text-shadow: 2px 2px 0 #000;
+        }
+
+        #score {
+            font-size: 16px;
+            color: #32FF32; /* Radar Green */
+            margin-left: 20px;
+            float: left;
+        }
+
+        #instructions {
+            font-size: 12px;
+            color: #FFD700;
+            margin-right: 20px;
+            float: right;
+            animation: blink 1.5s infinite;
+        }
+
+        @keyframes blink {
+            0% { opacity: 1; }
+            50% { opacity: 0.3; }
+            100% { opacity: 1; }
+        }
+
+        @media (max-width: 850px) {
+            #game-container { width: 100%; height: 50vh; }
+            .bezel-wrapper { width: 95%; }
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <img src="captain.png" alt="Captain" class="header-logo">
+        
+        <h1>TOP GUN: MAJICA ZONE</h1>
+        <p>IT'S NOT THE PLANE IT'S THE PILOT</p>
+    </header>
+
+    <div class="content-area">
+        <h2 style="color: #FF4500; font-size: 20px; margin-bottom: 30px;">MISSION: CLASSIFIED</h2>
+        
+        <div class="bezel-wrapper">
+            <div class="game-header"> I feel the need... the need for speed! // LIVE SHOOTING</div>
+            <div id="game-container">
+                <div id="ui-layer">
+                    <div id="score">KILLS: 0</div>
+                    <div id="instructions">INSERT COIN...</div>
+                </div>
+                <canvas id="gameCanvas"></canvas>
+            </div>
+        </div>
+
+        <p style="margin-top: 30px; line-height: 1.8;">
+            OBJECTIVE: INTERCEPT MIG-28s.<br>
+            DO NOT FIRE UNTIL FIRED UPON.<br>
+            <span style="color: #32FF32;">GOOD LUCK, MAVERICK.</span>
+        </p>
+    </div>
+
+    <footer>
+        &copy; QM PRODUCTION
+    </footer>
+
+<script>
+    // (THE JAVASCRIPT GAME CODE REMAINS UNCHANGED)
+    const container = document.getElementById('game-container');
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    const scoreEl = document.getElementById('score');
+    const instrEl = document.getElementById('instructions');
+
+    // --- RESIZE HANDLING ---
+    let GAME_WIDTH = container.clientWidth;
+    let GAME_HEIGHT = container.clientHeight;
+
+    function resize() {
+        GAME_WIDTH = container.clientWidth;
+        GAME_HEIGHT = container.clientHeight;
+        canvas.width = GAME_WIDTH;
+        canvas.height = GAME_HEIGHT;
+        
+        // Keep pixel art crisp
+        ctx.imageSmoothingEnabled = false;
+
+        if (player.x > GAME_WIDTH - player.width) {
+            player.x = GAME_WIDTH - player.width;
+        }
+        player.y = GAME_HEIGHT - player.height - 20; 
+    }
+    
+    window.addEventListener('resize', resize);
+
+    // --- IMAGES ---
+    const playerImg = new Image();
+    playerImg.src = 'topgun.png';
+    const enemyImg = new Image();
+    enemyImg.src = 'mig.png';
+
+    let imagesLoaded = 0;
+    const checkStart = () => {
+        imagesLoaded++;
+        if(imagesLoaded === 2) startGame();
+    };
+
+    const startGame = () => {
+        instrEl.innerText = "SPACE: FIRE | R: RESTART";
+        resize(); 
+        requestAnimationFrame(gameLoop);
+    };
+
+    playerImg.onload = checkStart;
+    enemyImg.onload = checkStart;
+    
+    setTimeout(() => {
+        if(imagesLoaded < 2) startGame();
+    }, 1000);
+
+    // --- CONFIGURATION ---
+    const P_WIDTH = 64; 
+    const P_HEIGHT = 64;
+    const E_WIDTH = 48;
+    const E_HEIGHT = 48;
+
+    let gameRunning = true;
+    let score = 0;
+    
+    // --- INPUT ---
+    const keys = {};
+    window.addEventListener('keydown', (e) => {
+        if(["ArrowUp","ArrowDown","ArrowLeft","ArrowRight","Space"].includes(e.code)) {
+            e.preventDefault();
+        }
+        keys[e.code] = true;
+        if (e.code === 'KeyR' && !gameRunning) resetGame();
+    });
+    window.addEventListener('keyup', (e) => keys[e.code] = false);
+
+    // --- OBJECTS ---
+    const player = {
+        x: 0, 
+        y: 0,
+        width: P_WIDTH,
+        height: P_HEIGHT,
+        speed: 6,
+        update: function() {
+            if (keys['ArrowLeft'] && this.x > 0) this.x -= this.speed;
+            if (keys['ArrowRight'] && this.x < GAME_WIDTH - this.width) this.x += this.speed;
+        },
+        draw: function() {
+            if(playerImg.complete && playerImg.naturalHeight !== 0) {
+                ctx.drawImage(playerImg, this.x, this.y, this.width, this.height);
+            } else {
+                ctx.fillStyle = '#999';
+                ctx.fillRect(this.x + 28, this.y, 8, 64);
+                ctx.fillRect(this.x, this.y + 30, 64, 16);
+                ctx.fillRect(this.x + 20, this.y + 50, 24, 8);
+                ctx.fillStyle = '#00FFFF';
+                ctx.fillRect(this.x + 30, this.y + 10, 4, 10);
+            }
+        }
+    };
+
+    let bullets = [];
+    let enemies = [];
+    let spawnTimer = 0;
+
+    function spawnEnemy() {
+        enemies.push({
+            x: Math.random() * (GAME_WIDTH - E_WIDTH),
+            y: -100,
+            width: E_WIDTH,
+            height: E_HEIGHT,
+            speedY: Math.random() * 3 + 2,
+            speedX: Math.random() * 2 - 1
+        });
+    }
+
+    function resetGame() {
+        bullets = [];
+        enemies = [];
+        score = 0;
+        scoreEl.innerText = "KILLS: " + score;
+        gameRunning = true;
+        resize(); 
+        player.x = GAME_WIDTH / 2 - P_WIDTH/2; 
+        requestAnimationFrame(gameLoop);
+    }
+
+    // --- LOOP ---
+    function gameLoop() {
+        if (!gameRunning) return;
+
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        ctx.strokeStyle = '#222';
+        ctx.lineWidth = 2;
+        for(let i=0; i<GAME_WIDTH; i+=50) {
+            ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, GAME_HEIGHT); ctx.stroke();
+        }
+        for(let i=0; i<GAME_HEIGHT; i+=50) {
+            ctx.beginPath(); ctx.moveTo(0, i); ctx.lineTo(GAME_WIDTH, i); ctx.stroke();
+        }
+
+        player.update();
+        player.draw();
+
+        if (keys['Space']) {
+            if (!keys.spaceLocked) {
+                bullets.push({
+                    x: player.x + P_WIDTH/2 - 4, 
+                    y: player.y, 
+                    width: 8, 
+                    height: 16
+                });
+                keys.spaceLocked = true;
+            }
+        } else {
+            keys.spaceLocked = false;
+        }
+
+        ctx.fillStyle = '#FFD700';
+        for (let i = bullets.length - 1; i >= 0; i--) {
+            let b = bullets[i];
+            b.y -= 10;
+            ctx.fillRect(b.x, b.y, b.width, b.height);
+            if (b.y < 0) bullets.splice(i, 1);
+        }
+
+        spawnTimer++;
+        if (spawnTimer > 30 && enemies.length < (8 + Math.floor(score/10))) {
+            spawnEnemy();
+            spawnTimer = 0;
+        }
+
+        for (let i = enemies.length - 1; i >= 0; i--) {
+            let e = enemies[i];
+            e.y += e.speedY;
+            e.x += e.speedX;
+
+            if(enemyImg.complete && enemyImg.naturalHeight !== 0) {
+                ctx.save();
+                ctx.translate(e.x + e.width/2, e.y + e.height/2);
+                ctx.scale(1, -1); 
+                ctx.drawImage(enemyImg, -e.width/2, -e.height/2, e.width, e.height);
+                ctx.restore();
+            } else {
+                ctx.fillStyle = '#D22'; 
+                ctx.fillRect(e.x + 20, e.y, 8, 48); 
+                ctx.fillRect(e.x, e.y + 10, 48, 12); 
+            }
+
+            for (let j = bullets.length - 1; j >= 0; j--) {
+                let b = bullets[j];
+                if (b.x > e.x && b.x < e.x + e.width && b.y < e.y + e.height && b.y > e.y) {
+                    enemies.splice(i, 1);
+                    bullets.splice(j, 1);
+                    score++;
+                    scoreEl.innerText = "KILLS: " + score;
+                    break;
+                }
+            }
+
+            if (
+                player.x < e.x + e.width &&
+                player.x + player.width > e.x &&
+                player.y < e.y + e.height &&
+                player.height + player.y > e.y
+            ) {
+                gameOver();
+            }
+
+            if (e.y > GAME_HEIGHT) enemies.splice(i, 1);
+        }
+
+        requestAnimationFrame(gameLoop);
+    }
+
+    function gameOver() {
+        gameRunning = false;
+        
+        ctx.fillStyle = "#000";
+        ctx.fillRect(GAME_WIDTH/2 - 200, GAME_HEIGHT/2 - 60, 400, 150);
+        ctx.strokeStyle = "#fff";
+        ctx.strokeRect(GAME_WIDTH/2 - 200, GAME_HEIGHT/2 - 60, 400, 150);
+
+        ctx.fillStyle = "white";
+        ctx.textAlign = "center";
+        
+        ctx.font = "20px 'Press Start 2P'"; 
+        ctx.fillText("TALK TO ME GOOSE!!", GAME_WIDTH/2, GAME_HEIGHT/2 - 10);
+        
+        ctx.fillStyle = "#FFD700";
+        ctx.font = "12px 'Press Start 2P'";
+        ctx.fillText("PRESS 'R' TO RE-ENGAGE", GAME_WIDTH/2, GAME_HEIGHT/2 + 30);
+        
+        ctx.textAlign = "left"; 
+    }
+</script>
+</body>
+</html>

@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LISA'S PAGE</title>
+    <style>
+        /* Import Retro Font */
+        @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
+
+        :root {
+            --wood-light: #8D6E63;
+            --wood-med: #5D4037;
+            --wood-dark: #3E2723;
+            --frame-border: 8px;
+        }
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+            font-family: 'Press Start 2P', cursive;
+            color: white;
+            user-select: none;
+            
+            /* --- Flex layout for centering --- */
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding-bottom: 50px; /* Space at bottom for scrolling */
+
+            /* --- Pixel Art Bookshelf Background --- */
+            image-rendering: pixelated; 
+            background-color: #8B4513;
+            background-image: 
+                repeating-linear-gradient(to bottom, var(--wood-med) 0px, var(--wood-med) 10px, transparent 10px, transparent 130px),
+                repeating-linear-gradient(to right, #A52A2A 0px, #A52A2A 20px, #556B2F 20px, #556B2F 35px, #483D8B 35px, #483D8B 60px, #8B4513 60px, #8B4513 65px, #DAA520 65px, #DAA520 85px, #800000 85px, #800000 100px);
+            background-size: 100px 130px;
+        }
+
+        /* --- NEW HEADER & BANNER STYLES --- */
+        .main-header {
+            width: 100%;
+            height: 400px; /* Bigger height as requested */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            border-bottom: 6px solid var(--wood-dark);
+            margin-bottom: 40px;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.5);
+            
+            /* --- SET YOUR BANNER IMAGE HERE IN CSS --- */
+            /* ### REPLACE THE URL INSIDE THE QUOTES BELOW WITH YOUR FILE PATH ### */
+            background-image: url('Gemini_Generated_Image_2rxdvo2rxdvo2rxd.png');
+            
+            background-size: cover; /* Ensures image covers the whole area */
+            background-position: center;
+            image-rendering: pixelated; /* Keep pixel style */
+            position: relative;
+        }
+
+        /* Dark overlay so text is always readable */
+        .main-header::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.3); /* Semi-transparent dark layer */
+        }
+
+        h1.main-title {
+            font-size: 48px; /* Larger title font */
+            margin: 0;
+            text-align: center;
+            color: #fff;
+            position: relative; /* Ensure it sits above the overlay */
+            z-index: 2;
+            /* Thicker retro outline for better readability over images */
+            text-shadow:
+                4px 4px 0 #000,
+                -4px -4px 0 #000,
+                4px -4px 0 #000,
+                -4px 4px 0 #000,
+                0 6px 0 var(--wood-dark);
+        }
+
+        /* --- Game Container Styles --- */
+        .game-wrapper {
+            border: var(--frame-border) solid var(--wood-med);
+            outline: 4px solid var(--wood-dark);
+            background-color: #222;
+            padding: 20px;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.5);
+            margin-bottom: 40px;
+        }
+
+        canvas {
+            border: 4px solid #fff;
+            background-color: #333;
+            image-rendering: pixelated;
+            display: block;
+        }
+
+        #ui { margin-top: 15px; text-align: center; line-height: 1.5; }
+        .instructions { font-size: 10px; color: #aaa; }
+        .key-hint { color: #4dff4d; }
+
+        /* --- Photo Gallery Styles --- */
+        .gallery-container {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            flex-wrap: wrap;
+            max-width: 1000px;
+        }
+
+        .pixel-frame {
+            position: relative;
+            width: 220px;
+            height: 280px;
+            background-color: #000;
+            border: var(--frame-border) solid var(--wood-med);
+            outline: 4px solid var(--wood-dark);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.6);
+            transition: transform 0.1s;
+        }
+
+        .pixel-frame:hover { transform: translateY(-2px); }
+
+        .pixel-frame img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            image-rendering: pixelated;
+            border: 2px solid #111;
+        }
+    </style>
+</head>
+<body>
+
+    <header class="main-header">
+        <h1 class="main-title">LISA'S PAGE</h1>
+    </header>
+
+    <div class="game-wrapper">
+        <canvas id="gameCanvas" width="320" height="360"></canvas>
+        <div id="ui">
+            <div id="score">SCORE: 0</div>
+            <div class="instructions">HOLD SPACE/CLICK TO CHARGE</div>
+            <div class="instructions">PRESS <span class="key-hint">'S'</span> TO CHANGE BOTTLE</div>
+        </div>
+    </div>
+
+    <div class="gallery-container">
+        <div class="pixel-frame">
+            <img src="lisa1.png" alt="Pixel Art Image 1">
+        </div>
+        <div class="pixel-frame">
+            <img src="lisa2.png" alt="Pixel Art Image 2">
+        </div>
+        <div class="pixel-frame">
+            <img src="lisa3.png" alt="Pixel Art Image 3">
+        </div>
+    </div>
+
+
+<script>
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    const scoreEl = document.getElementById('score');
+
+    // --- Audio Engine ---
+    const AudioContext = window.AudioContext || window.webkitAudioContext;
+    let audioCtx;
+    function initAudio() {
+        if (!audioCtx) { audioCtx = new AudioContext(); }
+        if (audioCtx.state === 'suspended') { audioCtx.resume(); }
+    }
+    function playTone(freq, type, duration, vol = 0.1) {
+        if (!audioCtx) return;
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = type;
+        osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+        gain.gain.setValueAtTime(vol, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + duration);
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start();
+        osc.stop(audioCtx.currentTime + duration);
+    }
+    function sfxJump() { playTone(150, 'sawtooth', 0.1, 0.1); }
+    function sfxCharge() { playTone(200 + (power*2), 'triangle', 0.05, 0.05); } 
+    function sfxLand() { playTone(80, 'square', 0.1, 0.2); }
+    function sfxScore() { playTone(600, 'sine', 0.1, 0.1); setTimeout(() => playTone(900, 'sine', 0.2, 0.1), 100); }
+    function sfxFail() { playTone(100, 'sawtooth', 0.4, 0.2); }
+
+
+    // --- Configuration ---
+    const SCALE = 4;
+    const GRAVITY = 0.5;
+    
+    // --- Skins System ---
+    const SKINS = [
+        { name: "Wine", colors: { 1: '#4dff4d', 2: '#fff', 3: '#8B4513' }, 
+          map: [[0,0,3,3,0,0],[0,0,3,3,0,0],[0,1,1,1,1,0],[0,1,1,1,1,0],[0,1,1,1,1,0],[1,1,2,2,1,1],[1,1,2,2,1,1],[1,1,2,2,1,1],[1,1,1,1,1,1],[1,1,1,1,1,1],[1,1,1,1,1,1],[1,1,1,1,1,1]] },
+        { name: "Whiskey", colors: { 1: '#cd853f', 2: '#000', 3: '#333' }, 
+          map: [[0,0,3,3,0,0],[0,1,1,1,1,0],[0,1,1,1,1,0],[1,1,1,1,1,1],[1,1,2,2,1,1],[1,1,2,2,1,1],[1,1,2,2,1,1],[1,1,1,1,1,1],[1,1,1,1,1,1],[1,1,1,1,1,1]] },
+        { name: "Potion", colors: { 1: '#00bfff', 2: '#ff00ff', 3: '#fff' }, 
+          map: [[0,0,3,3,0,0],[0,0,1,1,0,0],[0,1,1,1,1,0],[1,1,2,2,1,1],[1,1,2,2,1,1],[1,1,1,1,1,1],[0,1,1,1,1,0],[0,0,1,1,0,0]] }
+    ];
+
+    let currentSkinIndex = 0;
+    let score = 0;
+    let gameState = 'IDLE'; 
+    let power = 0;
+    let powerDirection = 1;
+    let resetTimer = 0;
+
+    let platform = { x: 60, y: 280, width: 200, height: 20, speed: 2, direction: 1 };
+    let bottle = { x: canvas.width / 2, y: platform.y, vx: 0, vy: 0, angle: 0, vr: 0, width: 0, height: 0 };
+
+    function loadSkin(index) {
+        const skin = SKINS[index];
+        bottle.width = skin.map[0].length * SCALE;
+        bottle.height = skin.map.length * SCALE;
+        if (gameState === 'IDLE') bottle.y = platform.y;
+    }
+    loadSkin(0); 
+
+    // --- Input Handling ---
+    function startCharge() {
+        initAudio(); 
+        if (gameState === 'IDLE') { gameState = 'CHARGING'; power = 0; }
+    }
+    function releaseCharge() {
+        if (gameState === 'CHARGING') flipBottle();
+    }
+    function cycleSkin() {
+        if (gameState === 'IDLE') {
+            currentSkinIndex = (currentSkinIndex + 1) % SKINS.length;
+            loadSkin(currentSkinIndex);
+            sfxCharge();
+        }
+    }
+
+    window.addEventListener('mousedown', startCharge);
+    window.addEventListener('mouseup', releaseCharge);
+    window.addEventListener('touchstart', (e) => { e.preventDefault(); startCharge(); });
+    window.addEventListener('touchend', (e) => { e.preventDefault(); releaseCharge(); });
+    window.addEventListener('keydown', (e) => {
+        if (e.code === 'Space') startCharge();
+        if (e.code === 'KeyS') cycleSkin();
+    });
+    window.addEventListener('keyup', (e) => { if (e.code === 'Space') releaseCharge(); });
+
+    // --- Core Logic ---
+    function flipBottle() {
+        gameState = 'FLIPPING';
+        sfxJump();
+        const jumpForce = -9 - (power / 100 * 8);
+        const rotationForce = 10 + (power / 100 * 15);
+        bottle.vy = jumpForce;
+        bottle.vr = rotationForce;
+        bottle.vx = (platform.speed * platform.direction * 0.5) + ((Math.random() - 0.5) * 1); 
+    }
+
+    function checkLanding() {
+        const bottleLeft = bottle.x - (bottle.width/2);
+        const bottleRight = bottle.x + (bottle.width/2);
+        const platLeft = platform.x;
+        const platRight = platform.x + platform.width;
+        const hitPlatform = (bottleRight > platLeft && bottleLeft < platRight);
+
+        if (!hitPlatform) { gameState = 'VOID'; sfxFail(); return; }
+        sfxLand();
+        let normalizedAngle = bottle.angle % 360;
+        if (normalizedAngle < 0) normalizedAngle += 360;
+        const tolerance = 25;
+        const isUpright = (normalizedAngle < tolerance || normalizedAngle > 360 - tolerance);
+
+        if (isUpright) {
+            gameState = 'LANDED'; score++; sfxScore();
+            scoreEl.innerText = "SCORE: " + score;
+            scoreEl.style.color = "#4dff4d"; setTimeout(() => scoreEl.style.color = "white", 300);
+            bottle.angle = 0; bottle.relativeX = bottle.x - platform.x; 
+        } else {
+            gameState = 'FAILED'; sfxFail();
+            bottle.angle = 90; bottle.y = platform.y + (bottle.width/2) - (bottle.height/2);
+            bottle.relativeX = bottle.x - platform.x;
+        }
+        bottle.vx = 0; bottle.vy = 0; bottle.vr = 0; resetTimer = 60;
+    }
+
+    function resetBottle() {
+        gameState = 'IDLE'; bottle.angle = 0; bottle.vx = 0; bottle.vy = 0; power = 0;
+        bottle.x = platform.x + platform.width / 2; bottle.y = platform.y;
+    }
+
+    function update() {
+        platform.x += platform.speed * platform.direction;
+        if (platform.x <= 0 || platform.x + platform.width >= canvas.width) platform.direction *= -1;
+
+        if (gameState === 'IDLE') bottle.x = platform.x + platform.width / 2;
+        else if (gameState === 'LANDED' || gameState === 'FAILED') bottle.x = platform.x + bottle.relativeX;
+
+        if (gameState === 'CHARGING') {
+            power += 2 * powerDirection;
+            if (power % 10 === 0) sfxCharge();
+            if (power >= 100) { power = 100; powerDirection = -1; } else if (power <= 0) { power = 0; powerDirection = 1; }
+        }
+
+        if (gameState === 'FLIPPING' || gameState === 'VOID') {
+            bottle.vy += GRAVITY; bottle.y += bottle.vy; bottle.x += bottle.vx; bottle.angle += bottle.vr;
+            if (gameState === 'FLIPPING' && bottle.y >= platform.y) { bottle.y = platform.y; checkLanding(); }
+            if (bottle.y > canvas.height + 50) { resetTimer = 30; gameState = 'FAILED'; score = 0; scoreEl.innerText = "SCORE: " + score; }
+        }
+        if (gameState === 'LANDED' || gameState === 'FAILED') {
+            if (resetTimer > 0) resetTimer--; else resetBottle();
+        }
+    }
+
+    // --- Rendering ---
+    function drawPixelRect(x, y, color) { ctx.fillStyle = color; ctx.fillRect(Math.floor(x), Math.floor(y), SCALE, SCALE); }
+
+    function drawBottle() {
+        ctx.save(); ctx.translate(bottle.x, bottle.y); ctx.rotate(bottle.angle * Math.PI / 180);
+        const currentSkin = SKINS[currentSkinIndex]; const map = currentSkin.map; const colors = currentSkin.colors;
+        const offsetX = -(map[0].length * SCALE) / 2; const offsetY = -(map.length * SCALE); 
+        for (let r = 0; r < map.length; r++) {
+            for (let c = 0; c < map[r].length; c++) {
+                const pixelType = map[r][c];
+                if (pixelType !== 0) drawPixelRect(offsetX + (c * SCALE), offsetY + (r * SCALE), colors[pixelType] || '#000');
+            }
+        }
+        ctx.restore();
+    }
+
+    function drawEnvironment() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.fillStyle = '#444'; for(let i=0; i<10; i++) ctx.fillRect((i*50 + Date.now()/50)%320, (i*40)%360, 2, 2);
+        ctx.fillStyle = "#5D4037"; ctx.fillRect(platform.x, platform.y, platform.width, platform.height);
+        ctx.fillStyle = "#8D6E63"; ctx.fillRect(platform.x, platform.y, platform.width, 4); 
+        if (gameState === 'CHARGING' || gameState === 'FLIPPING') {
+            const barWidth = 10; const barHeight = 80; const barX = bottle.x + 40; const barY = bottle.y - 80;
+            if (barX < canvas.width - 20) { 
+                ctx.fillStyle = '#222'; ctx.fillRect(barX, barY, barWidth, barHeight);
+                const fillHeight = (power / 100) * barHeight;
+                ctx.fillStyle = `rgb(${255 * (power/100)}, ${255 * (1 - power/100)}, 0)`;
+                ctx.fillRect(barX, barY + (barHeight - fillHeight), barWidth, fillHeight);
+            }
+        }
+    }
+
+    function drawUI() {
+        ctx.fillStyle = "#aaa"; ctx.font = "10px 'Press Start 2P'"; ctx.textAlign = "left";
+        ctx.fillText("SKIN: " + SKINS[currentSkinIndex].name, 10, 20);
+        if (gameState === 'LANDED') {
+            ctx.fillStyle = "#4dff4d"; ctx.font = "20px 'Press Start 2P'"; ctx.textAlign = "center"; ctx.fillText("PERFECT!", canvas.width/2, 100);
+        } else if (gameState === 'FAILED') {
+            ctx.fillStyle = "#ff4d4d"; ctx.font = "20px 'Press Start 2P'"; ctx.textAlign = "center"; ctx.fillText("FAIL", canvas.width/2, 100);
+        } else if (gameState === 'VOID') {
+            ctx.fillStyle = "#ff4d4d"; ctx.font = "20px 'Press Start 2P'"; ctx.textAlign = "center"; ctx.fillText("OOPS!", canvas.width/2, 150);
+        }
+    }
+
+    function loop() { update(); drawEnvironment(); drawBottle(); drawUI(); requestAnimationFrame(loop); }
+    loop();
+</script>
+</body>
+</html>

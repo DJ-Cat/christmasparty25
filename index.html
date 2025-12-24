@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Christmas Gift Hub</title>
+    <style>
+        /* IMPORT A PIXEL FONT */
+        @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
+
+        body {
+            /* --- BACKGROUND IMAGE SETTINGS --- */
+            background-image: url('mainback.png'); /* Make sure your image is named this! */
+            background-size: cover; 
+            background-position: center;
+            background-repeat: no-repeat;
+            background-color: #2c0e37; 
+            
+            font-family: 'Press Start 2P', cursive;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            overflow: hidden;
+            color: white;
+        }
+
+        h1 {
+            margin-bottom: 20px;
+            /* Thick black outline on text to make it readable */
+            text-shadow: 
+                3px 3px 0 #000,
+                -1px -1px 0 #000,  
+                1px -1px 0 #000,
+                -1px 1px 0 #000,
+                1px 1px 0 #000;
+            text-align: center;
+            line-height: 1.5;
+            font-size: 24px;
+            z-index: 20;
+        }
+
+        /* THE TREE CONTAINER */
+        .tree-container {
+            position: relative;
+            width: 400px;
+            height: 500px;
+            display: flex;
+            justify-content: center;
+            align-items: flex-end;
+            z-index: 10;
+
+            /* --- THIS IS THE NEW SHADOW EFFECT --- */
+            /* This creates a dark, thick silhouette behind the entire tree shape */
+            filter: drop-shadow(0px 0px 20px #000000) drop-shadow(0px 0px 5px #000000);
+        }
+
+        /* PIXEL ART TREE LAYERS */
+        .layer {
+            position: absolute;
+            background-color: #2d8f38; 
+            box-shadow: 8px 8px 0px 0px #1a5622; 
+        }
+
+        .trunk {
+            width: 60px;
+            height: 80px;
+            background-color: #6d4c41;
+            bottom: 0;
+            box-shadow: 8px 8px 0px 0px #3e2723;
+        }
+        
+        .l1 { width: 340px; height: 100px; bottom: 80px; z-index: 1; }
+        .l2 { width: 280px; height: 90px; bottom: 180px; z-index: 2; }
+        .l3 { width: 200px; height: 80px; bottom: 270px; z-index: 3; }
+        .l4 { width: 120px; height: 70px; bottom: 350px; z-index: 4; }
+        
+        .top-star {
+            width: 50px; 
+            height: 50px; 
+            background-color: #ffd700; 
+            bottom: 420px; 
+            z-index: 5;
+            box-shadow: 0 0 15px #ffd700; 
+            animation: twinkle 1.5s infinite alternate;
+        }
+
+        /* THE ORNAMENTS (LINKS) */
+        .ornament {
+            position: absolute;
+            width: 30px;
+            height: 30px;
+            background-color: red;
+            display: block;
+            text-decoration: none;
+            box-shadow: 4px 4px 0px 0px rgba(0,0,0,0.5);
+            transition: transform 0.1s;
+            cursor: pointer;
+            z-index: 10;
+        }
+
+        .ornament:hover {
+            transform: scale(1.2);
+            filter: brightness(1.2);
+        }
+
+        /* Positioning the 8 ornaments */
+        .o1 { bottom: 370px; left: 185px; background-color: #ff3333; } 
+        .o2 { bottom: 300px; left: 140px; background-color: #33ccff; } 
+        .o3 { bottom: 300px; left: 230px; background-color: #ff99cc; } 
+        .o4 { bottom: 210px; left: 100px; background-color: #ffff33; } 
+        .o5 { bottom: 210px; left: 270px; background-color: #ff3333; } 
+        .o6 { bottom: 220px; left: 185px; background-color: #ffffff; } 
+        .o7 { bottom: 110px; left: 60px;  background-color: #ff99cc; } 
+        .o8 { bottom: 110px; left: 310px; background-color: #33ccff; } 
+
+        /* SNOWFALL EFFECT */
+        .snowflake {
+            position: absolute;
+            top: -10px;
+            background-color: white;
+            width: 8px;
+            height: 8px;
+            animation: fall linear infinite;
+            z-index: 5; 
+        }
+
+        @keyframes fall {
+            to { transform: translateY(105vh); }
+        }
+
+        @keyframes twinkle {
+            from { opacity: 0.8; }
+            to { opacity: 1; transform: scale(1.1); }
+        }
+
+    </style>
+</head>
+<body>
+
+    <h1>MERRY CHRISTMAS<br>PICK A GIFT!</h1>
+
+    <div class="tree-container">
+        <div class="top-star"></div>
+        <div class="layer l4"></div>
+        <div class="layer l3"></div>
+        <div class="layer l2"></div>
+        <div class="layer l1"></div>
+        <div class="trunk"></div>
+
+        <a href="mama.html" class="ornament o1" title="Gift 1"></a>
+        <a href="jens.html" class="ornament o2" title="Gift 2"></a>
+        <a href="papa.html" class="ornament o3" title="Gift 3"></a>
+        <a href="lisa.html" class="ornament o4" title="Gift 4"></a>
+        <a href="matti.html" class="ornament o5" title="Gift 5"></a>
+        <a href="stric.html" class="ornament o6" title="Gift 6"></a>
+        <a href="jana.html" class="ornament o7" title="Gift 7"></a>
+        <a href="antonmaria.html" class="ornament o8" title="Gift 8"></a>
+    </div>
+
+    <script>
+        function createSnow() {
+            const snow = document.createElement('div');
+            snow.classList.add('snowflake');
+            snow.style.left = Math.random() * 100 + 'vw';
+            snow.style.animationDuration = Math.random() * 3 + 2 + 's';
+            snow.style.opacity = Math.random();
+            document.body.appendChild(snow);
+            
+            setTimeout(() => {
+                snow.remove();
+            }, 5000);
+        }
+        setInterval(createSnow, 100);
+    </script>
+
+</body>
+</html>

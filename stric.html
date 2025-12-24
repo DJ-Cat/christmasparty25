@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Stric's and Katharina's and Pheby's and Indi's Page</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
+
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #202020;
+            
+            /* --- WEBSITE BACKGROUND IMAGE --- */
+            background-image: url('stricpicture.png');
+            background-size: cover;      
+            background-position: center; 
+            background-repeat: no-repeat;
+            
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh; 
+            color: white;
+            font-family: 'Press Start 2P', cursive;
+            overflow-x: hidden; 
+            user-select: none; /* Prevents highlighting text while playing */
+        }
+
+        /* --- 1. MAIN PAGE TITLE --- */
+        #main-title {
+            text-align: center;
+            color: #f4d03f; 
+            /* Heavy Pixel Shadow */
+            text-shadow: 4px 4px 0 #000, -2px -2px 0 #000, 2px -2px 0 #000, -2px 2px 0 #000;
+            
+            font-size: 40px;      
+            line-height: 1.5;     
+            margin-top: -50px;    
+            margin-bottom: 30px;
+            padding: 10px;
+            max-width: 90%;
+            z-index: 10;
+        }
+
+        #gameContainer {
+            position: relative;
+            border: 4px solid #fff;
+            box-shadow: 0 0 50px rgba(0,0,0,0.9);
+            width: 800px;
+            height: 450px;
+            background-color: #000; /* Fallback */
+        }
+
+        canvas {
+            display: block;
+            image-rendering: pixelated; 
+        }
+
+        /* --- UI LAYER (Scores) --- */
+        #ui-layer {
+            position: absolute;
+            top: 20px;
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            padding: 0 40px;
+            box-sizing: border-box;
+            pointer-events: none;
+            text-shadow: 2px 2px 0 #000;
+            font-size: 14px;
+            z-index: 5;
+            display: none; /* Hidden on start screen */
+        }
+
+        /* --- START SCREEN OVERLAY --- */
+        #start-screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.6); /* See-through background */
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 20;
+            cursor: pointer;
+        }
+
+        /* Game Title on Start Screen */
+        .game-logo {
+            color: #ff6600; /* Sunset Orange */
+            font-size: 60px;
+            margin: 0;
+            margin-bottom: 40px;
+            text-shadow: 6px 6px 0 #000, -3px -3px 0 #000, 3px -3px 0 #000, -3px 3px 0 #000;
+            letter-spacing: 5px;
+            text-align: center;
+        }
+
+        /* Flashing Start Text */
+        .start-text {
+            color: white;
+            font-size: 18px;
+            text-shadow: 3px 3px 0 #000;
+            animation: blink 1s infinite;
+        }
+
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0; }
+        }
+
+        /* --- GAME OVER SCREEN --- */
+        #message {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            display: none;
+            background: rgba(0, 0, 0, 0.9);
+            padding: 30px;
+            border: 4px solid #f4d03f;
+            z-index: 30;
+            box-shadow: 5px 5px 0 #000;
+        }
+
+        #message h1 { margin-top: 0; color: #f4d03f; text-shadow: 3px 3px 0 #000; }
+        #message p { text-shadow: 2px 2px 0 #000; }
+
+        /* --- CHARGE BAR --- */
+        .charge-bar-container {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            width: 200px;
+            height: 25px;
+            border: 3px solid white;
+            background: #000;
+            display: none;
+            z-index: 5;
+        }
+
+        #charge-fill {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, #ff0000, #ffff00);
+        }
+        
+        #charge-text {
+            position: absolute;
+            width: 100%;
+            text-align: center;
+            top: 6px;
+            font-size: 10px;
+            color: black;
+            font-weight: bold;
+            z-index: 2;
+        }
+    </style>
+</head>
+<body>
+
+<h1 id="main-title">Stric's and Katharina's and Pheby's and Indi's Page</h1>
+
+<div id="gameContainer">
+    <canvas id="gameCanvas" width="800" height="450"></canvas>
+    
+    <div id="start-screen" onclick="startGame()">
+        <h1 class="game-logo">BALI BALL</h1>
+        <p class="start-text">PRESS SPACE TO START</p>
+    </div>
+
+    <div id="ui-layer">
+        <span>YOU (P1)</span>
+        <span>CPU</span>
+    </div>
+
+    <div id="charge-meter" class="charge-bar-container">
+        <div id="charge-text">POWER</div>
+        <div id="charge-fill"></div>
+    </div>
+
+    <div id="message">
+        <h1 id="msg-title">GAME OVER</h1>
+        <p>Press SPACE to Restart</p>
+    </div>
+</div>
+
+<script>
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    const startScreen = document.getElementById('start-screen');
+    const uiLayer = document.getElementById('ui-layer');
+    const msgBox = document.getElementById('message');
+    const msgTitle = document.getElementById('msg-title');
+    const chargeContainer = document.getElementById('charge-meter');
+    const chargeFill = document.getElementById('charge-fill');
+
+    // --- Game Configuration ---
+    const GRAVITY = 0.45;
+    const GROUND_Y = 380; 
+    const NET_X = canvas.width / 2;
+    const NET_H = 130; 
+    
+    let gameState = 'start'; // New state: 'start', 'playing', 'gameover'
+
+    const clouds = [
+        {x: 50, y: 50, w: 60, h: 20, speed: 0.2},
+        {x: 400, y: 80, w: 80, h: 25, speed: 0.15},
+        {x: 700, y: 40, w: 50, h: 15, speed: 0.3}
+    ];
+
+    const player = {
+        x: 150, y: GROUND_Y - 50, w: 32, h: 50, 
+        color: '#f1c27d', shortsColor: '#ff0055', 
+        speed: 6, charging: false, chargeLevel: 0
+    };
+
+    const cpu = {
+        x: 600, y: GROUND_Y - 50, w: 32, h: 50,
+        color: '#8d5524', shortsColor: '#00ccff',
+        speed: 3.5,
+    };
+
+    const ball = {
+        x: 600, y: 100, radius: 12,
+        color: '#ffffff', vx: 0, vy: 0, rotation: 0
+    };
+
+    // --- Input Handling ---
+    const keys = { ArrowLeft: false, ArrowRight: false, Space: false };
+
+    document.addEventListener('keydown', (e) => {
+        if(e.code === 'Space') {
+            // Logic based on state
+            if (gameState === 'start') {
+                startGame();
+            } else if (gameState === 'gameover') {
+                resetGame();
+            } else if (gameState === 'playing') {
+                keys.Space = true; 
+                player.charging = true; 
+            }
+        }
+        if(e.code === 'ArrowLeft') keys.ArrowLeft = true;
+        if(e.code === 'ArrowRight') keys.ArrowRight = true;
+    });
+
+    document.addEventListener('keyup', (e) => {
+        if(e.code === 'Space') {
+            if (gameState === 'playing') {
+                keys.Space = false;
+                releaseShot();
+                player.charging = false;
+                player.chargeLevel = 0;
+                updateChargeUI();
+            }
+        }
+        if(e.code === 'ArrowLeft') keys.ArrowLeft = false;
+        if(e.code === 'ArrowRight') keys.ArrowRight = false;
+    });
+
+    // --- Game Logic ---
+    function startGame() {
+        if(gameState === 'playing') return;
+        gameState = 'playing';
+        startScreen.style.display = 'none';
+        uiLayer.style.display = 'flex';
+        resetGamePositions();
+    }
+
+    function resetGame() {
+        gameState = 'playing';
+        msgBox.style.display = 'none';
+        resetGamePositions();
+    }
+
+    function resetGamePositions() {
+        player.x = 200;
+        cpu.x = 600;
+        ball.x = 600; ball.y = 100; ball.vx = -4; ball.vy = -8;
+    }
+
+    function releaseShot() {
+        const cx = player.x + player.w/2;
+        const cy = player.y + player.h/2;
+        const dist = Math.hypot(ball.x - cx, ball.y - cy);
+        
+        if (dist < 90) { 
+            const power = 7 + (player.chargeLevel / 100) * 13; 
+            let dirX = 1;
+            if (ball.x < player.x) dirX = -0.2; 
+            ball.vx = dirX * (power * 0.7); 
+            ball.vy = -power; 
+        }
+    }
+
+    function updatePhysics() {
+        // Even in 'start' mode, we animate the clouds/water for effect
+        // but we don't move the ball or players.
+        
+        clouds.forEach(c => {
+            c.x += c.speed;
+            if(c.x > canvas.width) c.x = -c.w;
+        });
+
+        if (gameState !== 'playing') return;
+
+        if (keys.ArrowLeft) player.x -= player.speed;
+        if (keys.ArrowRight) player.x += player.speed;
+
+        if (player.x < 0) player.x = 0;
+        if (player.x + player.w > NET_X - 5) player.x = NET_X - player.w - 5;
+
+        if (player.charging && player.chargeLevel < 100) player.chargeLevel += 2.5;
+
+        // CPU AI
+        const cpuCenter = cpu.x + cpu.w/2;
+        if (ball.x > NET_X) {
+            if (ball.x > cpuCenter + 5) cpu.x += cpu.speed;
+            else if (ball.x < cpuCenter - 5) cpu.x -= cpu.speed;
+            
+            const distCpu = Math.hypot(ball.x - cpuCenter, ball.y - (cpu.y + cpu.h/2));
+            if (distCpu < 60 && ball.vy > 0 && ball.y > 250) {
+                ball.vy = -13; ball.vx = -Math.random() * 6 - 2; 
+            }
+        } else {
+            if (cpu.x < 600) cpu.x += 2;
+            if (cpu.x > 600) cpu.x -= 2;
+        }
+        if (cpu.x < NET_X + 5) cpu.x = NET_X + 5;
+        if (cpu.x + cpu.w > canvas.width) cpu.x = canvas.width - cpu.w;
+
+        ball.vy += GRAVITY;
+        ball.x += ball.vx;
+        ball.y += ball.vy;
+        ball.rotation += ball.vx * 0.1;
+
+        if (ball.x - ball.radius < 0) { ball.x = ball.radius; ball.vx *= -0.7; }
+        if (ball.x + ball.radius > canvas.width) { ball.x = canvas.width - ball.radius; ball.vx *= -0.7; }
+
+        if (ball.x + ball.radius > NET_X - 5 && ball.x - ball.radius < NET_X + 5) {
+            if (ball.y > GROUND_Y - NET_H) { ball.vx *= -0.8; ball.x += ball.vx; }
+        }
+
+        if (ball.y + ball.radius >= GROUND_Y) {
+            gameState = 'gameover';
+            if (ball.x < NET_X) { msgTitle.innerText = "POINT: CPU"; msgTitle.style.color = "#ff4444"; } 
+            else { msgTitle.innerText = "POINT: YOU"; msgTitle.style.color = "#44ff44"; }
+            msgBox.style.display = 'block';
+        }
+
+        if (ball.x > player.x && ball.x < player.x + player.w && ball.y + ball.radius > player.y && ball.y < player.y + player.h) {
+            ball.vy = -6; ball.y = player.y - ball.radius - 2;
+        }
+    }
+
+    // --- Drawing Functions ---
+    function drawPixelRect(x, y, w, h, color) {
+        ctx.fillStyle = color;
+        ctx.fillRect(Math.floor(x), Math.floor(y), Math.floor(w), Math.floor(h));
+    }
+
+    function drawEnvironment() {
+        // Sky
+        drawPixelRect(0, 0, canvas.width, canvas.height, '#62c1e5');
+        
+        // Sun
+        drawPixelRect(700, 30, 40, 40, '#fff700'); 
+        drawPixelRect(690, 40, 10, 20, 'rgba(255, 247, 0, 0.5)');
+        drawPixelRect(740, 40, 10, 20, 'rgba(255, 247, 0, 0.5)');
+        drawPixelRect(710, 20, 20, 10, 'rgba(255, 247, 0, 0.5)');
+        drawPixelRect(710, 70, 20, 10, 'rgba(255, 247, 0, 0.5)');
+
+        // Clouds
+        ctx.fillStyle = '#ffffff';
+        clouds.forEach(c => {
+            drawPixelRect(c.x, c.y, c.w, c.h, '#fff');
+            drawPixelRect(c.x + 10, c.y - 10, c.w - 20, 10, '#fff');
+        });
+
+        // Ocean
+        const oceanY = GROUND_Y - 40;
+        drawPixelRect(0, oceanY, canvas.width, 40, '#2b65ec');
+        ctx.fillStyle = '#5dade2';
+        for(let i=0; i<10; i++) {
+            ctx.fillRect((Date.now()/5 + i*100) % canvas.width, oceanY + 5 + (i%3)*5, 10, 2);
+        }
+
+        // Sand
+        drawPixelRect(0, GROUND_Y, canvas.width, canvas.height - GROUND_Y, '#f6d7b0');
+        ctx.fillStyle = '#eebb99'; // Dots in sand
+        for(let i=0; i<canvas.width; i+=40) {
+            ctx.fillRect(i + 10, GROUND_Y + 20, 4, 4);
+            ctx.fillRect(i + 30, GROUND_Y + 50, 4, 4);
+        }
+
+        // Net
+        drawPixelRect(NET_X - 4, GROUND_Y - NET_H, 8, NET_H, '#555'); 
+        ctx.fillStyle = 'rgba(255,255,255,0.6)';
+        for(let y = GROUND_Y - NET_H; y < GROUND_Y - 20; y += 8) {
+             drawPixelRect(NET_X - 2, y, 4, 2, '#fff'); 
+        }
+        drawPixelRect(NET_X - 2, GROUND_Y - NET_H, 4, NET_H - 20, 'rgba(0,0,0,0.2)');
+    }
+
+    function drawCharacter(char) {
+        drawPixelRect(char.x + 4, char.y + 30, 8, 20, char.color); 
+        drawPixelRect(char.x + 20, char.y + 30, 8, 20, char.color); 
+        drawPixelRect(char.x, char.y + 25, char.w, 12, char.shortsColor); 
+        drawPixelRect(char.x, char.y, char.w, 25, char.color); 
+        drawPixelRect(char.x + 4, char.y - 16, 24, 16, char.color); 
+        drawPixelRect(char.x + 14, char.y - 10, 14, 4, '#000'); 
+        drawPixelRect(char.x + 2, char.y - 20, 28, 6, '#3e2723'); 
+
+        if (char.charging) {
+            ctx.save();
+            ctx.globalAlpha = 0.5 + Math.sin(Date.now() / 50) * 0.2;
+            ctx.strokeStyle = '#ffff00';
+            ctx.lineWidth = 4;
+            ctx.strokeRect(char.x - 5, char.y - 25, char.w + 10, char.h + 25);
+            ctx.restore();
+        }
+    }
+
+    function drawBall() {
+        ctx.save();
+        ctx.translate(ball.x, ball.y);
+        ctx.rotate(ball.rotation);
+        
+        ctx.beginPath();
+        ctx.arc(0, 0, ball.radius, 0, Math.PI * 2);
+        ctx.fillStyle = '#fff';
+        ctx.fill();
+        ctx.lineWidth = 2;
+        ctx.strokeStyle = '#000';
+        ctx.stroke();
+
+        ctx.beginPath(); ctx.moveTo(0,0); ctx.arc(0, 0, ball.radius, 0, Math.PI/2); ctx.lineTo(0,0);
+        ctx.fillStyle = '#ff0000'; ctx.fill(); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(0,0); ctx.arc(0, 0, ball.radius, Math.PI, Math.PI * 1.5); ctx.lineTo(0,0);
+        ctx.fillStyle = '#0000ff'; ctx.fill(); ctx.stroke();
+        ctx.restore();
+    }
+
+    function updateChargeUI() {
+        if (player.charging) {
+            chargeContainer.style.display = 'block';
+            chargeFill.style.width = player.chargeLevel + '%';
+        } else {
+            chargeContainer.style.display = 'none';
+        }
+    }
+
+    function loop() {
+        updatePhysics();
+        updateChargeUI();
+
+        drawEnvironment(); 
+        
+        // Only draw players and ball if NOT in start screen (optional, but looks cleaner)
+        // Or we draw them in the background behind the title:
+        drawCharacter(player);
+        drawCharacter(cpu);
+        if (gameState !== 'start') {
+            drawBall(); // Don't show ball falling until game starts
+        }
+
+        requestAnimationFrame(loop);
+    }
+
+    // Set initial positions
+    resetGamePositions();
+    loop();
+
+</script>
+</body>
+</html>

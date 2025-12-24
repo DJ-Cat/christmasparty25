@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Anton's and Maria's Page</title>
+    <style>
+        /* IMPORT RETRO FONT */
+        @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
+
+        body {
+            /* --- WALLPAPER SETTINGS --- */
+            background-color: #202028; 
+            background-image: url('antomapic.png'); 
+            background-size: cover;    
+            background-position: center;
+            background-repeat: no-repeat;
+            /* -------------------------- */
+            
+            color: #fff;
+            font-family: 'Press Start 2P', cursive;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            overflow: hidden;
+        }
+
+        /* --- TITLE --- */
+        #main-title {
+            font-size: 36px; 
+            color: #ffffff;
+            text-shadow: 4px 4px 0px #000000; 
+            margin-bottom: 30px;
+            text-align: center;
+            line-height: 1.5;
+        }
+
+        /* Game Title */
+        .game-title {
+            color: #ffcc00;
+            text-shadow: 3px 3px #000;
+            margin-bottom: 10px;
+            font-size: 20px;
+            text-align: center;
+            line-height: 1.5;
+            background: rgba(0,0,0,0.8);
+            padding: 10px 20px;
+            border: 2px solid #fff;
+        }
+
+        #game-container {
+            position: relative;
+            border: 6px solid #fff;
+            box-shadow: 10px 10px 0px #000;
+            background-color: #639bff; 
+        }
+
+        canvas {
+            display: block;
+            image-rendering: pixelated; 
+        }
+
+        #ui-layer {
+            position: absolute;
+            top: 20px;
+            left: 0;
+            width: 100%;
+            text-align: center;
+            pointer-events: none;
+        }
+
+        .hud-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 0 40px; 
+        }
+
+        .hud-text {
+            font-size: 16px;
+            text-shadow: 2px 2px #000;
+        }
+
+        #start-screen, #game-over-screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.85);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 10;
+        }
+
+        .blink {
+            animation: blinker 1s linear infinite;
+            color: #00ff00;
+            margin-top: 20px;
+        }
+
+        @keyframes blinker {
+            50% { opacity: 0; }
+        }
+
+        button {
+            background: #ff0055;
+            border: 4px solid #fff;
+            color: white;
+            padding: 15px 20px;
+            font-family: 'Press Start 2P', cursive;
+            font-size: 16px;
+            cursor: pointer;
+            margin-top: 20px;
+        }
+
+        button:hover {
+            background: #ff5588;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="main-title">Anton's and Maria's Page</div>
+
+    <div class="game-title">SPACEBAR MARATHON<br><span style="font-size:10px; color:#ddd">RUN AS FAST AS YOU CAN!</span></div>
+
+    <div id="game-container">
+        <canvas id="gameCanvas" width="800" height="400"></canvas>
+        
+        <div id="ui-layer">
+            <div class="hud-row">
+                <div id="timer" class="hud-text">TIME: 0.00s</div>
+                <div id="distance" class="hud-text">DIST: 0m</div>
+            </div>
+        </div>
+
+        <div id="start-screen">
+            <div style="color: #fff; margin-bottom: 20px; text-align: center; line-height: 1.6;">
+                READY RUNNER?<br>
+                <span style="font-size: 10px; color: #aaa;">(ALTERNATE 'A' AND 'D' KEYS)</span>
+            </div>
+            <div class="blink">PRESS A OR D TO START</div>
+        </div>
+
+        <div id="game-over-screen" class="hidden">
+            <div style="color: #ffcc00; font-size: 30px; margin-bottom: 20px;">FINISHED!</div>
+            <div id="final-time" style="color: #fff; margin-bottom: 20px;">TIME: 0.00s</div>
+            <button onclick="resetGame()">RACE AGAIN</button>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        // Game State
+        let gameState = 'START';
+        let startTime = 0;
+        
+        // Physics
+        const friction = 0.96;
+        const acceleration = 2.0; // Slightly higher accel for A/D tapping feeling
+        let velocity = 0;
+        let cameraX = 0;
+        const totalDistance = 5000;
+        
+        // Input Tracking
+        let lastKey = null; // Tracks 'A' or 'D'
+
+        // Animation
+        let frameTick = 0;
+        
+        // Sprite Colors
+        const runnerColorMap = {
+            1: '#ffccaa', // Skin
+            2: '#ff0055', // Shirt
+            3: '#0000ff', // Shorts
+            4: '#ffffff'  // Shoes
+        };
+
+        function drawPixelSprite(ctx, x, y, scale, frame) {
+            const runFrame = (frame % 20 < 10) ? 0 : 1; 
+            
+            let spriteLayout;
+
+            if (runFrame === 0 || velocity < 0.1) {
+                spriteLayout = [
+                    [0,0,1,1,1,0,0,0], 
+                    [0,0,1,1,1,0,0,0], 
+                    [0,2,2,2,2,2,0,0], 
+                    [0,2,2,2,2,2,0,0], 
+                    [0,0,3,3,3,0,0,0], 
+                    [0,0,1,0,1,0,0,0], 
+                    [0,1,1,0,1,1,0,0], 
+                    [0,4,4,0,4,4,0,0]  
+                ];
+            } else {
+                spriteLayout = [
+                    [0,0,1,1,1,0,0,0],
+                    [0,0,1,1,1,0,0,0], 
+                    [0,2,2,2,2,2,0,0],
+                    [0,2,2,2,2,2,0,0],
+                    [0,0,3,3,3,0,0,0],
+                    [0,0,0,1,0,0,0,0], 
+                    [0,0,1,1,1,0,0,0], 
+                    [0,0,4,4,4,0,0,0] 
+                ];
+                y -= 2; 
+            }
+
+            for (let r = 0; r < 8; r++) {
+                for (let c = 0; c < 8; c++) {
+                    const colorCode = spriteLayout[r][c];
+                    if (colorCode !== 0) {
+                        ctx.fillStyle = runnerColorMap[colorCode];
+                        ctx.fillRect(x + c * scale, y + r * scale, scale, scale);
+                    }
+                }
+            }
+        }
+
+        // --- NEW INPUT LOGIC ---
+        window.addEventListener('keydown', (e) => {
+            const code = e.code;
+            
+            // Start Game logic
+            if (gameState === 'START') {
+                if (code === 'KeyA' || code === 'KeyD') {
+                    startGame();
+                }
+            } 
+            // Playing Logic
+            else if (gameState === 'PLAYING') {
+                // If pressing A, and last key was NOT A (so it was D or null)
+                if (code === 'KeyA' && lastKey !== 'A') {
+                    velocity += acceleration;
+                    lastKey = 'A'; // Record this key press
+                }
+                // If pressing D, and last key was NOT D (so it was A or null)
+                else if (code === 'KeyD' && lastKey !== 'D') {
+                    velocity += acceleration;
+                    lastKey = 'D'; // Record this key press
+                }
+
+                // Max Speed Cap
+                if(velocity > 18) velocity = 18; 
+            }
+        });
+
+        function startGame() {
+            gameState = 'PLAYING';
+            startTime = Date.now();
+            document.getElementById('start-screen').classList.add('hidden');
+            velocity = 5; 
+            lastKey = null; // Reset key history
+            gameLoop();
+        }
+
+        function resetGame() {
+            gameState = 'START';
+            cameraX = 0;
+            velocity = 0;
+            lastKey = null;
+            document.getElementById('game-over-screen').classList.add('hidden');
+            document.getElementById('start-screen').classList.remove('hidden');
+            document.getElementById('timer').innerText = "TIME: 0.00s";
+            document.getElementById('distance').innerText = "DIST: 0m";
+            draw(); 
+        }
+
+        function update() {
+            if (gameState !== 'PLAYING') return;
+
+            velocity *= friction;
+            
+            if (velocity < 0.1) velocity = 0;
+
+            cameraX += velocity;
+            if (velocity > 0.5) frameTick += velocity;
+
+            // UI Updates
+            const currentTime = (Date.now() - startTime) / 1000;
+            document.getElementById('timer').innerText = `TIME: ${currentTime.toFixed(2)}s`;
+            document.getElementById('distance').innerText = `DIST: ${Math.floor(cameraX/10)}m`;
+
+            // Win Condition
+            if (cameraX >= totalDistance) {
+                gameState = 'FINISHED';
+                const finalTime = currentTime.toFixed(2);
+                document.getElementById('final-time').innerText = `TIME: ${finalTime}s`;
+                document.getElementById('game-over-screen').classList.remove('hidden');
+            }
+        }
+
+        function draw() {
+            // 1. Clear Screen (Sky)
+            ctx.fillStyle = '#639bff';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // 2. Draw Background Clouds (Parallax)
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(100 - (cameraX * 0.2) % 900, 80, 60, 20);
+            ctx.fillRect(120 - (cameraX * 0.2) % 900, 60, 40, 40);
+            ctx.fillRect(500 - (cameraX * 0.1) % 900, 120, 80, 25);
+            
+            // 3. Draw Ground
+            ctx.fillStyle = '#44aa44';
+            ctx.fillRect(0, 300, canvas.width, 100);
+
+            // 4. Draw Track
+            ctx.fillStyle = '#cc8844'; 
+            ctx.fillRect(0, 310, canvas.width, 80);
+            
+            // Track lines
+            ctx.fillStyle = '#dd9955';
+            const stripeGap = 100;
+            const offset = cameraX % stripeGap;
+            for(let i = -1; i < 10; i++) {
+                ctx.fillRect((i * stripeGap) - offset, 310, 40, 80);
+            }
+
+            // 5. Draw Finish Line
+            if (totalDistance - cameraX < 800) {
+                const finishX = (totalDistance - cameraX) + 100; 
+                
+                ctx.fillStyle = '#fff';
+                ctx.fillRect(finishX, 250, 10, 150);
+                ctx.fillRect(finishX + 100, 250, 10, 150);
+                
+                ctx.fillStyle = '#ff0000';
+                ctx.fillRect(finishX, 250, 110, 30);
+                ctx.fillStyle = '#fff';
+                ctx.font = '10px "Press Start 2P"';
+                ctx.fillText("FINISH", finishX + 20, 270);
+
+                for(let r=0; r<4; r++) {
+                    for(let c=0; c<2; c++) {
+                        ctx.fillStyle = (r+c)%2===0 ? '#fff' : '#000';
+                        ctx.fillRect(finishX + (c*50), 310 + (r*20), 50, 20);
+                    }
+                }
+            }
+
+            // 6. Draw Player
+            const spriteScale = 8;
+            drawPixelSprite(ctx, 100, 280, spriteScale, frameTick);
+        }
+
+        function gameLoop() {
+            if (gameState === 'PLAYING') {
+                update();
+                draw();
+                requestAnimationFrame(gameLoop);
+            }
+        }
+
+        draw();
+
+    </script>
+</body>
+</html>

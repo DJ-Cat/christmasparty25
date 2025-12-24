@@ -1,0 +1,559 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hi-Res Pixel Memory</title>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #2c2137;
+            --card-back-pattern: #4a3b59;
+            --card-back-hover: #68537a;
+            /* --- CHANGE MADE HERE --- */
+            /* Was #fff5c4 (cream). Changed to a dark purple/charcoal for contrast */
+            --card-face-bg: #221a29; 
+            /* ------------------------ */
+            --accent: #ff0055;
+            --text: #ffffff;
+            --success: #00e436;
+            --shadow-color: #1a1321;
+        }
+
+        body {
+            /* Fallback color if image doesn't load */
+            background-color: var(--bg-color);
+            
+            /* --- BACKGROUND SETTINGS (from previous request) --- */
+            background-image: url('mamawasser.png');
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            background-attachment: fixed;
+            /* --------------------------------------------------- */
+
+            color: var(--text);
+            font-family: 'Press Start 2P', cursive;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            user-select: none;
+            /* CRITICAL: Ensures pixel art scales crisply without blurring */
+            image-rendering: pixelated; 
+        }
+
+        h1 {
+            font-size: 24px;
+            margin-bottom: 10px;
+            text-shadow: 4px 4px var(--accent), 0 0 10px #000;
+            text-align: center;
+            line-height: 1.5;
+        }
+
+        .stats {
+            margin-bottom: 20px;
+            font-size: 12px;
+            color: #dcdcdc;
+            text-shadow: 2px 2px #000;
+            background: rgba(0, 0, 0, 0.5);
+            padding: 5px 10px;
+            border-radius: 4px;
+        }
+
+        .grid-container {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 12px;
+            background: var(--shadow-color);
+            padding: 15px;
+            border: 4px solid var(--text);
+            box-shadow: 8px 8px 0px var(--accent);
+        }
+
+        .card {
+            width: 65px;
+            height: 65px;
+            position: relative;
+            cursor: pointer;
+            transform-style: preserve-3d;
+            transition: transform 0.3s;
+        }
+
+        .card.flipped {
+            transform: rotateY(180deg);
+        }
+
+        .card-face {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            backface-visibility: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 4px solid var(--shadow-color);
+            box-sizing: border-box;
+            /* This now uses the new darker color */
+            background-color: var(--card-face-bg);
+        }
+
+        /* Front Pattern (The back of the deck) */
+        .card-front {
+            background-color: var(--card-back-pattern);
+            background-image: 
+                linear-gradient(45deg, #3d314a 25%, transparent 25%), 
+                linear-gradient(-45deg, #3d314a 25%, transparent 25%), 
+                linear-gradient(45deg, transparent 75%, #3d314a 75%), 
+                linear-gradient(-45deg, transparent 75%, #3d314a 75%);
+            background-size: 8px 8px;
+        }
+
+        .card:hover .card-front {
+            background-color: var(--card-back-hover);
+            border-color: var(--text);
+        }
+
+        /* Back Image (The fruit side) */
+        .card-back {
+            transform: rotateY(180deg);
+            background-repeat: no-repeat;
+            background-position: center;
+            background-size: 48px 48px;
+        }
+
+        .card.matched .card-back {
+            background-color: var(--success);
+            border-color: #fff;
+            animation: pulse 0.5s ease-in-out;
+        }
+
+        @keyframes pulse {
+            0% { transform: rotateY(180deg) scale(1); }
+            50% { transform: rotateY(180deg) scale(1.1); }
+            100% { transform: rotateY(180deg) scale(1); }
+        }
+
+        button {
+            margin-top: 30px;
+            background: var(--accent);
+            border: 4px solid #fff;
+            color: #fff;
+            font-family: 'Press Start 2P', cursive;
+            padding: 15px 25px;
+            font-size: 14px;
+            cursor: pointer;
+            box-shadow: 6px 6px 0px var(--shadow-color);
+        }
+        button:active {
+            transform: translate(4px, 4px);
+            box-shadow: 2px 2px 0px var(--shadow-color);
+        }
+
+        #overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(44, 33, 55, 0.95);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+            visibility: hidden;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        #overlay.visible {
+            visibility: visible;
+            opacity: 1;
+        }
+        .win-text {
+            color: var(--success);
+            font-size: 20px;
+            margin-bottom: 20px;
+            text-align: center;
+            text-shadow: 4px 4px var(--shadow-color);
+        }
+    </style>
+</head>
+<body>
+
+    <h1>PIXEL FRUIT<br>DX EDITION</h1>
+    
+    <div class="stats">
+        Moves: <span id="move-count">0</span>
+    </div>
+
+    <div class="grid-container" id="game-board"></div>
+
+    <button onclick="initGame()">RESET GAME</button>
+
+    <div id="overlay">
+        <div class="win-text">YOU WIN!</div>
+        <div class="stats">Moves Taken: <span id="final-moves"></span></div>
+        <button onclick="initGame()">PLAY AGAIN</button>
+    </div>
+
+    <script>
+        // --- 1. ENHANCED PIXEL ENGINE (12x12 Grid) ---
+        // Legend: 
+        // r=red, g=green, d=darkgreen, y=yellow, b=blue, o=orange, 
+        // p=purple, w=white, k=black, c=cyan, s=brown(stem)
+        // . = transparent
+
+        const pixelMaps = {
+            cherry: [
+                "............",
+                "......d.....",
+                ".....d......",
+                "....d.......",
+                "...d.d......",
+                "..r...r.....",
+                ".rrr.rrr....",
+                ".rrr.rrr....",
+                ".rrr.rrr....",
+                "..r...r.....",
+                "............",
+                "............"
+            ],
+            apple: [
+                "............",
+                "......g.....",
+                ".....s......",
+                "...rrrrr....",
+                "..rrrrrrr...",
+                ".rrrrrrrrr..",
+                ".rrrrrwrrr..",
+                ".rrrrrrrrr..",
+                ".rrrrrrrrr..",
+                "..rrrrrrr...",
+                "...rrrrr....",
+                "............"
+            ],
+            banana: [
+                "............",
+                "......s.....",
+                ".....yy.....",
+                "....yyyy....",
+                "...yyyyy....",
+                "...yyyy.....",
+                "..yyyy......",
+                "..yyyy......",
+                ".yyyy.......",
+                ".yyyy.......",
+                ".yy.........",
+                "............"
+            ],
+            grape: [
+                "............",
+                ".....s......",
+                "....gdg.....",
+                "...ppppp....",
+                "..ppppppp...",
+                "..ppppppp...",
+                "...ppppp....",
+                "...ppppp....",
+                "....ppp.....",
+                ".....p......",
+                "............",
+                "............"
+            ],
+            lemon: [
+                "............",
+                "....yy......",
+                "...yyyy.....",
+                "..yyyyyy....",
+                ".yyyyyyyy...",
+                ".yyyyyyyy...",
+                ".yyyyyyyy...",
+                "..yyyyyy....",
+                "...yyyy.....",
+                "......yy....",
+                "............",
+                "............"
+            ],
+            orange: [
+                "............",
+                ".....gg.....",
+                "....oooo....",
+                "...oooooo...",
+                "..ooooooo...",
+                "..ooooooo...",
+                "..ooooooo...",
+                "..ooooooo...",
+                "...oooooo...",
+                "....oooo....",
+                "............",
+                "............"
+            ],
+            watermelon: [
+                "............",
+                "............",
+                "............",
+                "...gggggg...",
+                "..gwwrrwwg..",
+                ".gwwkrrkwwg.",
+                ".gwwrrrrwwg.",
+                ".gwwkrrkwwg.",
+                "..gwwwwwwg..",
+                "...gggggg...",
+                "............",
+                "............"
+            ],
+            strawberry: [
+                "............",
+                ".....gg.....",
+                "....gggg....",
+                "...rrrrrr...",
+                "..rwrwrwr...",
+                "..rrrrrrr...",
+                "...rwrwr....",
+                "...rrrrr....",
+                "....rrr.....",
+                ".....r......",
+                "............",
+                "............"
+            ],
+            pear: [
+                "............",
+                ".....s......",
+                "....gg......",
+                "...gggg.....",
+                "...gggg.....",
+                "..gggggg....",
+                ".gggggggg...",
+                ".gggggggg...",
+                ".gggggggg...",
+                "..gggggg....",
+                "............",
+                "............"
+            ],
+            blueberry: [
+                "............",
+                ".....b......",
+                "....bbb.....",
+                "...bbbbb....",
+                "...bbbbb....",
+                "..bbbbbbb...",
+                "..bbbbbbb...",
+                "...bbbbb....",
+                "....bbb.....",
+                "............",
+                "............",
+                "............"
+            ],
+            peach: [
+                "............",
+                ".....gd.....",
+                "....oooo....",
+                "...oooooo...",
+                "..ooooooo...",
+                "..ooorroo...",
+                "..ooooooo...",
+                "..ooooooo...",
+                "...ooooo....",
+                "....ooo.....",
+                "............",
+                "............"
+            ],
+            pineapple: [
+                ".....gg.....",
+                "....g..g....",
+                "....oyyo....",
+                "...oyyyyo...",
+                "...oyyyyo...",
+                "...oyyyyo...",
+                "...oyyyyo...",
+                "....oyyo....",
+                "............",
+                "............",
+                "............",
+                "............"
+            ],
+            diamond: [ // The Special Lucky Item
+                "............",
+                ".....cc.....",
+                "....cccc....",
+                "...cccccc...",
+                "..cccccccc..",
+                ".cccccccccc.",
+                ".cccccccccc.",
+                "..cccccccc..",
+                "...cccccc...",
+                "....cccc....",
+                ".....cc.....",
+                "............"
+            ]
+        };
+
+        const colors = {
+            r: '#ff0055', // Red
+            g: '#00e436', // Bright Green
+            d: '#008720', // Dark Green
+            y: '#fff000', // Yellow
+            b: '#2980b9', // Blue
+            o: '#ff9f43', // Orange
+            p: '#9b59b6', // Purple
+            c: '#00ffff', // Cyan
+            k: '#000000', // Black (Seeds)
+            w: '#ffffff', // White (Highlights/Seeds)
+            s: '#8d6e63'  // Brown (Stems)
+        };
+
+        function generateTexture(mapName) {
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            const map = pixelMaps[mapName];
+            
+            // Auto-detect size based on array length
+            const size = map.length;
+            canvas.width = size;
+            canvas.height = size;
+
+            map.forEach((row, y) => {
+                row.split('').forEach((pixel, x) => {
+                    if (colors[pixel]) {
+                        ctx.fillStyle = colors[pixel];
+                        ctx.fillRect(x, y, 1, 1);
+                    }
+                });
+            });
+            return canvas.toDataURL();
+        }
+
+        // --- 2. GAME LOGIC (Same as before) ---
+
+        const gameBoard = document.getElementById('game-board');
+        const moveDisplay = document.getElementById('move-count');
+        const overlay = document.getElementById('overlay');
+        const finalMovesDisplay = document.getElementById('final-moves');
+
+        const fruitList = Object.keys(pixelMaps).filter(k => k !== 'diamond');
+        const specialItem = 'diamond';
+
+        let hasFlippedCard = false;
+        let lockBoard = false;
+        let firstCard, secondCard;
+        let matchedPairs = 0;
+        let moves = 0;
+
+        function shuffle(array) {
+            return array.sort(() => Math.random() - 0.5);
+        }
+
+        function initGame() {
+            gameBoard.innerHTML = '';
+            overlay.classList.remove('visible');
+            moves = 0;
+            matchedPairs = 0;
+            moveDisplay.innerText = moves;
+            [hasFlippedCard, lockBoard] = [false, false];
+            [firstCard, secondCard] = [null, null];
+
+            // Create Deck: 12 pairs + 1 Diamond
+            let deck = [...fruitList, ...fruitList, specialItem];
+            deck = shuffle(deck);
+
+            deck.forEach(itemType => {
+                const card = document.createElement('div');
+                card.classList.add('card');
+                card.dataset.type = itemType;
+
+                const frontFace = document.createElement('div');
+                frontFace.classList.add('card-face', 'card-front');
+
+                const backFace = document.createElement('div');
+                backFace.classList.add('card-face', 'card-back');
+                
+                // Draw the higher res texture
+                backFace.style.backgroundImage = `url(${generateTexture(itemType)})`;
+
+                card.appendChild(backFace);
+                card.appendChild(frontFace);
+                
+                card.addEventListener('click', flipCard);
+                gameBoard.appendChild(card);
+            });
+        }
+
+        function flipCard() {
+            if (lockBoard) return;
+            if (this === firstCard) return;
+
+            this.classList.add('flipped');
+
+            // Handle Lucky Diamond
+            if (this.dataset.type === specialItem) {
+                disableCard(this);
+                checkWin();
+                return;
+            }
+
+            if (!hasFlippedCard) {
+                hasFlippedCard = true;
+                firstCard = this;
+                return;
+            }
+
+            secondCard = this;
+            incrementMoves();
+            checkForMatch();
+        }
+
+        function checkForMatch() {
+            let isMatch = firstCard.dataset.type === secondCard.dataset.type;
+            isMatch ? disableCards() : unflipCards();
+        }
+
+        function disableCard(card) {
+            card.removeEventListener('click', flipCard);
+            card.classList.add('matched');
+            matchedPairs++; 
+        }
+
+        function disableCards() {
+            firstCard.removeEventListener('click', flipCard);
+            secondCard.removeEventListener('click', flipCard);
+            
+            firstCard.classList.add('matched');
+            secondCard.classList.add('matched');
+
+            matchedPairs++;
+            checkWin();
+            resetBoard();
+        }
+
+        function unflipCards() {
+            lockBoard = true;
+            setTimeout(() => {
+                firstCard.classList.remove('flipped');
+                secondCard.classList.remove('flipped');
+                resetBoard();
+            }, 1000);
+        }
+
+        function resetBoard() {
+            [hasFlippedCard, lockBoard] = [false, false];
+            [firstCard, secondCard] = [null, null];
+        }
+
+        function incrementMoves() {
+            moves++;
+            moveDisplay.innerText = moves;
+        }
+
+        function checkWin() {
+            if (matchedPairs === 13) {
+                finalMovesDisplay.innerText = moves;
+                setTimeout(() => {
+                    overlay.classList.add('visible');
+                }, 500);
+            }
+        }
+
+        initGame();
+    </script>
+</body>
+</html>

@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Literary Quiz</title>
+    <link href="https://fonts.googleapis.com/css2?family=Merriweather:ital,wght@0,300;0,400;0,700;1,400&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            /* Palette: Dark Academia / Library */
+            --bg-color: #2b1d14; /* Dark Wood */
+            --container-bg: #fdf5e6; /* Old Parchment */
+            --text-color: #1a1a1a; /* Ink Black */
+            --accent-color: #8b0000; /* Leather Red */
+            --gold-accent: #d4af37; /* Gold Leaf */
+            --button-text: #ffffff;
+            --correct: #2e7d32; /* Emerald Green */
+            --wrong: #b71c1c; /* Crimson Red */
+            --font-heading: 'Playfair Display', serif;
+            --font-body: 'Merriweather', serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            
+            /* --- BACKGROUND IMAGE SETTINGS --- */
+            /* Looks for 'background.jpg' in the same folder */
+            background-image: url('janha.png');
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            background-attachment: fixed;
+            
+            font-family: var(--font-body);
+            color: var(--text-color);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        /* The main game card */
+        #game-container {
+            background-color: var(--container-bg);
+            width: 100%;
+            max-width: 700px;
+            
+            /* Double border for a classic book look */
+            border: 8px double #5c4033;
+            border-radius: 4px;
+            
+            /* Soft, realistic shadow */
+            box-shadow: 0 15px 35px rgba(0,0,0,0.8);
+            
+            padding: 40px;
+            position: relative;
+            text-align: center;
+        }
+
+        /* Decorative Header */
+        h1 {
+            font-family: var(--font-heading);
+            font-size: 2.2rem;
+            margin-top: 0;
+            margin-bottom: 20px;
+            color: var(--bg-color);
+            border-bottom: 2px solid var(--gold-accent);
+            padding-bottom: 15px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        /* Status Bar */
+        #status-bar {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 30px;
+            font-size: 0.9rem;
+            color: #555;
+            font-style: italic;
+            border-bottom: 1px solid #ccc;
+            padding-bottom: 10px;
+        }
+
+        #status-bar span {
+            font-weight: bold;
+            color: var(--accent-color);
+        }
+
+        /* The Quote Display Area */
+        #quote-box {
+            background-color: transparent;
+            color: var(--text-color);
+            padding: 10px;
+            margin-bottom: 30px;
+            line-height: 1.8;
+            font-size: 1.15rem;
+            font-style: italic;
+            text-align: center;
+            min-height: 100px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+        
+        /* Add decorative quote marks */
+        #quote-box::before {
+            content: "“";
+            font-family: var(--font-heading);
+            font-size: 4rem;
+            color: rgba(0,0,0,0.1);
+            position: absolute;
+            top: -30px;
+            left: -10px;
+        }
+
+        /* Feedback messages */
+        #feedback {
+            height: 30px;
+            font-size: 1rem;
+            margin-bottom: 20px;
+            font-family: var(--font-heading);
+            font-weight: bold;
+            letter-spacing: 1px;
+        }
+
+        .correct-text { color: var(--correct); }
+        .wrong-text { color: var(--wrong); }
+
+        /* Container for choices */
+        #options-container {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+
+        /* Elegant Button Styling */
+        button {
+            font-family: var(--font-body);
+            background-color: var(--bg-color); /* Dark Brown */
+            color: var(--button-text);
+            border: 1px solid #4a3b2a;
+            padding: 15px 20px;
+            cursor: pointer;
+            font-size: 1rem;
+            border-radius: 3px;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Gold accent line on buttons */
+        button::after {
+            content: '';
+            position: absolute;
+            left: 5px;
+            top: 5px;
+            bottom: 5px;
+            width: 2px;
+            background-color: var(--gold-accent);
+            opacity: 0.5;
+        }
+
+        button:hover:not(:disabled) {
+            transform: translateY(-2px);
+            background-color: var(--accent-color); /* Red on hover */
+            box-shadow: 0 6px 12px rgba(0,0,0,0.4);
+        }
+
+        button:active:not(:disabled) {
+            transform: translateY(0);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        }
+
+        button:disabled {
+            opacity: 0.7;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        /* Next / Restart Button Special Styling */
+        #controls-area {
+            min-height: 60px;
+            display: flex;
+            justify-content: center;
+        }
+        
+        #next-btn, #restart-btn {
+            background-color: var(--gold-accent);
+            color: var(--bg-color);
+            font-weight: bold;
+            font-family: var(--font-heading);
+            width: auto;
+            padding: 15px 40px;
+            border: none;
+        }
+        
+        #next-btn::after, #restart-btn::after {
+            display: none; /* Remove the vertical line for these buttons */
+        }
+        
+        #next-btn:hover, #restart-btn:hover {
+            background-color: #e5c14f;
+        }
+
+        .hidden { display: none; }
+
+        /* End Screen */
+        #end-screen {
+            display: none;
+        }
+        
+        #final-score {
+            font-family: var(--font-heading);
+            font-size: 1.5rem;
+            color: var(--accent-color);
+            margin: 40px 0;
+            border-top: 1px solid #ccc;
+            border-bottom: 1px solid #ccc;
+            padding: 20px 0;
+        }
+    </style>
+</head>
+<body>
+
+<div id="game-container">
+    <h1>Jana and René's Quiz</h1>
+
+    <div id="game-view">
+        <div id="status-bar">
+            <div>Vol. <span id="q-progress">1</span> of 10</div>
+            <div>Knowledge: <span id="score">0</span></div>
+        </div>
+
+        <div id="quote-box">
+            <span id="quote-text">Loading passage...</span>
+        </div>
+
+        <div id="feedback"></div>
+
+        <div id="options-container">
+            <button class="option-btn" id="btn0"></button>
+            <button class="option-btn" id="btn1"></button>
+            <button class="option-btn" id="btn2"></button>
+        </div>
+
+        <div id="controls-area">
+            <button id="next-btn" class="hidden">Next Volume</button>
+        </div>
+    </div>
+
+    <div id="end-screen">
+        <h1>The End</h1>
+        <p id="final-score">Final Score: 0/10</p>
+        <button id="restart-btn">Consult the Archives Again</button>
+    </div>
+
+</div>
+
+<script>
+    // --- Data (35 items) ---
+    const bookData = [
+        // Original Set
+        { quote: "Call me Ishmael.", title: "Moby Dick" },
+        { quote: "It was the best of times, it was the worst of times...", title: "A Tale of Two Cities" },
+        { quote: "All happy families are alike; each unhappy family is unhappy in its own way.", title: "Anna Karenina" },
+        { quote: "Stay gold, Ponyboy, stay gold.", title: "The Outsiders" },
+        { quote: "Harry Potter, the boy who lived, come to die.", title: "Harry Potter and the Deathly Hallows" },
+        { quote: "Who controls the past controls the future. Who controls the present controls the past.", title: "1984" },
+        { quote: "And so we beat on, boats against the current, borne back ceaselessly into the past.", title: "The Great Gatsby" },
+        { quote: "It is a truth universally acknowledged, that a single man in possession of a good fortune, must be in want of a wife.", title: "Pride and Prejudice" },
+        { quote: "To be, or not to be, that is the question.", title: "Hamlet" },
+        { quote: "Not all those who wander are lost.", title: "The Fellowship of the Ring" },
+        { quote: "I am no bird; and no net ensnares me: I am a free human being with an independent will.", title: "Jane Eyre" },
+        { quote: "Whatever our souls are made of, his and mine are the same.", title: "Wuthering Heights" },
+        { quote: "There is no greater agony than bearing an untold story inside you.", title: "I Know Why the Caged Bird Sings" },
+        { quote: "Beware; for I am fearless, and therefore powerful.", title: "Frankenstein" },
+        { quote: "So it goes.", title: "Slaughterhouse-Five" },
+        
+        // General Fiction
+        { quote: "In a hole in the ground there lived a hobbit.", title: "The Hobbit" },
+        { quote: "Don't ever tell anybody anything. If you do, you start missing everybody.", title: "The Catcher in the Rye" },
+        { quote: "I am not afraid of storms, for I am learning how to sail my ship.", title: "Little Women" },
+        { quote: "The ships hung in the sky in much the same way that bricks don't.", title: "The Hitchhiker's Guide to the Galaxy" },
+        { quote: "It is only with the heart that one can see rightly; what is essential is invisible to the eye.", title: "The Little Prince" },
+        { quote: "All animals are equal, but some animals are more equal than others.", title: "Animal Farm" },
+        { quote: "I took a deep breath and listened to the old brag of my heart. I am, I am, I am.", title: "The Bell Jar" },
+        { quote: "Words can be like X-rays if you use them properly -- they'll go through anything.", title: "Brave New World" },
+        { quote: "It was a pleasure to burn.", title: "Fahrenheit 451" },
+        { quote: "You never really understand a person until you consider things from his point of view.", title: "To Kill a Mockingbird" },
+
+        // International & Lit Enthusiast
+        { quote: "Many years later, as he faced the firing squad, Colonel Aureliano Buendía was to remember that distant afternoon...", title: "One Hundred Years of Solitude" },
+        { quote: "Mother died today. Or maybe yesterday; I can't be sure.", title: "The Stranger" },
+        { quote: "As Gregor Samsa awoke one morning from uneasy dreams he found himself transformed in his bed into a gigantic insect.", title: "The Metamorphosis" },
+        { quote: "Manuscripts don't burn.", title: "The Master and Margarita" },
+        { quote: "For a long time I used to go to bed early.", title: "In Search of Lost Time" },
+        { quote: "Midway upon the journey of our life I found myself within a forest dark, for the straightforward pathway had been lost.", title: "The Divine Comedy" },
+        { quote: "Somewhere in la Mancha, in a place whose name I do not care to remember, a gentleman lived not long ago...", title: "Don Quixote" },
+        { quote: "I am a sick man... I am a spiteful man. I am an unpleasant man. I think my liver is diseased.", title: "Notes from Underground" },
+        { quote: "Human speech is like a cracked kettle on which we tap crude rhythms for bears to dance to, while we long to make music that will melt the stars.", title: "Madame Bovary" },
+        { quote: "Tell me, O muse, of that ingenious hero who travelled far and wide after he had sacked the famous town of Troy.", title: "The Odyssey" }
+    ];
+
+    // --- State Variables ---
+    let currentQuestionNum = 0;
+    let score = 0;
+    const totalQuestions = 10;
+    let currentCorrectAnswer = "";
+    let availableQuestions = [];
+    let isAnsweringDisabled = false;
+
+    // --- DOM Elements ---
+    const gameView = document.getElementById('game-view');
+    const endScreen = document.getElementById('end-screen');
+    const quoteTextEl = document.getElementById('quote-text');
+    const qProgressEl = document.getElementById('q-progress');
+    const scoreEl = document.getElementById('score');
+    const feedbackEl = document.getElementById('feedback');
+    const nextBtn = document.getElementById('next-btn');
+    const restartBtn = document.getElementById('restart-btn');
+    const finalScoreEl = document.getElementById('final-score');
+    const optionBtns = [
+        document.getElementById('btn0'),
+        document.getElementById('btn1'),
+        document.getElementById('btn2')
+    ];
+
+    // --- Helper Functions ---
+
+    function shuffleArray(array) {
+        for (let i = array.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [array[i], array[j]] = [array[j], array[i]];
+        }
+        return array;
+    }
+
+    const allTitles = [...new Set(bookData.map(item => item.title))];
+
+    // --- Game Logic ---
+
+    function initGame() {
+        score = 0;
+        currentQuestionNum = 0;
+        availableQuestions = [...bookData]; 
+        shuffleArray(availableQuestions);
+        
+        scoreEl.textContent = score;
+        gameView.style.display = 'block';
+        endScreen.style.display = 'none';
+        nextBtn.classList.add('hidden');
+        
+        loadNextQuestion();
+    }
+
+    function loadNextQuestion() {
+        currentQuestionNum++;
+        
+        if (currentQuestionNum > totalQuestions) {
+            endGame();
+            return;
+        }
+
+        isAnsweringDisabled = false;
+        feedbackEl.textContent = '';
+        feedbackEl.className = '';
+        nextBtn.classList.add('hidden');
+        optionBtns.forEach(btn => {
+            btn.disabled = false;
+            btn.style.backgroundColor = ''; 
+            btn.style.color = '';
+            btn.style.borderColor = '';
+        });
+
+        qProgressEl.textContent = currentQuestionNum;
+
+        const questionObj = availableQuestions.pop();
+        currentCorrectAnswer = questionObj.title;
+        quoteTextEl.textContent = questionObj.quote;
+
+        const wrongTitles = allTitles.filter(title => title !== currentCorrectAnswer);
+        shuffleArray(wrongTitles);
+
+        let options = [currentCorrectAnswer, wrongTitles[0], wrongTitles[1]];
+        shuffleArray(options);
+
+        optionBtns.forEach((btn, index) => {
+            btn.textContent = options[index];
+        });
+    }
+
+    function handleAnswerClick(selectedTitle, clickedBtn) {
+        if (isAnsweringDisabled) return;
+        isAnsweringDisabled = true; 
+
+        if (selectedTitle === currentCorrectAnswer) {
+            score++;
+            scoreEl.textContent = score;
+            feedbackEl.textContent = "Correct Selection";
+            feedbackEl.className = "correct-text";
+            clickedBtn.style.backgroundColor = "var(--correct)";
+            clickedBtn.style.color = "white";
+            clickedBtn.style.borderColor = "darkgreen";
+        } else {
+            feedbackEl.textContent = "Incorrect. It was: " + currentCorrectAnswer;
+            feedbackEl.className = "wrong-text";
+            clickedBtn.style.backgroundColor = "var(--wrong)";
+            clickedBtn.style.color = "white";
+            clickedBtn.style.borderColor = "darkred";
+
+            optionBtns.forEach(btn => {
+                if (btn.textContent === currentCorrectAnswer) {
+                    btn.style.backgroundColor = "var(--correct)";
+                    btn.style.color = "white";
+                }
+            });
+        }
+
+        optionBtns.forEach(btn => btn.disabled = true);
+        nextBtn.classList.remove('hidden');
+    }
+
+    function endGame() {
+        gameView.style.display = 'none';
+        endScreen.style.display = 'block';
+        finalScoreEl.textContent = `Knowledge Acquired: ${score} / ${totalQuestions}`;
+    }
+
+    // --- Event Listeners ---
+
+    optionBtns.forEach(btn => {
+        btn.addEventListener('click', function() {
+            handleAnswerClick(this.textContent, this);
+        });
+    });
+
+    nextBtn.addEventListener('click', loadNextQuestion);
+    restartBtn.addEventListener('click', initGame);
+
+    initGame();
+
+</script>
+</body>
+</html>
